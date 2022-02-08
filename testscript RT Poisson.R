@@ -18,13 +18,12 @@ theta.thin=0.25
 
 data=sim.RT(N=N,lam0=lam0,sigma=sigma,K=K,X=X,buff=buff,theta.thin=theta.thin)
 
-####Fit model in Nimble####
-
+##Fit model in Nimble##
 
 #data augmentation level
 M=175
 
-inits=list(lam0=1,sigma=1)
+inits=list(lam0=1,sigma=1) #ballpark inits to build data
 
 #This function structures the simulated data to fit the model in Nimble (some more restructing below)
 #Also checks some inits
@@ -55,7 +54,7 @@ nt2=50#thin more
 start.time<-Sys.time()
 Rmodel <- nimbleModel(code=NimModel, constants=constants, data=Nimdata,check=FALSE,
                       inits=Niminits)
-conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt1,
+conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,
                       monitors2=parameters2,nt2=nt2,useConjugacy = TRUE) 
 
 #conf$printSamplers() #shows the samplers used for each parameter and latent variable
