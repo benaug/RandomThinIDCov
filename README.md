@@ -14,3 +14,4 @@ As a result,
 2) Model parameters can be a function of the (partial) individual ID covariates. This includes typical SCR parameters like lam0 and sigma, but also the thinning rates. E.g., male cats may have a larger sigma than female cats and calico cats are easier to identify to individual than black cats (substitute any categorical covariates here.)
 
 
+(only base RT model uploaded so far)
