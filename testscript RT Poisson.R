@@ -1,4 +1,5 @@
 library(nimble)
+library(coda)
 source("sim.RT.R")
 source("NimbleModelRT Poisson.R")
 source("NimbleFunctionsRT Poisson.R")
@@ -32,6 +33,8 @@ M=175
 #trap operation vector.
 J=nrow(X)
 K1D=rep(K,J)
+#add K1D to data
+data$K1D=K1D
 
 inits=list(lam0=1,sigma=1) #ballpark inits to build data
 
@@ -113,11 +116,21 @@ end.time<-Sys.time()
 end.time-start.time  # total time for compilation, replacing samplers, and fitting
 end.time-start.time2 # post-compilation run time
 
-library(coda)
+
 mvSamples = as.matrix(Cmcmc$mvSamples)
 plot(mcmc(mvSamples[2:nrow(mvSamples),]))
 
 data$n.cap #true number of captured individuals
 
 
+#look at ID posteriors. Not removing any burnin here...
 mvSamples2 = as.matrix(Cmcmc$mvSamples2)
+
+check.sample=2
+#posterior prob this sample belongs to each individual number
+round(table(mvSamples2[,check.sample])/nrow(mvSamples2),2)
+#truth
+data$ID[check.sample]
+
+#individual numbers larger than n.cap were not captured and identified
+data$n.cap

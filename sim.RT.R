@@ -18,7 +18,7 @@ sim.RT<-
     lamd <-lam0 * exp(-D * D/(2 * sigma * sigma))
     J=nrow(X)
     
-    # Capture and mark individuals
+    # Capture individuals
     y.true <-array(0,dim=c(N,J,K))
     if(obstype=="bernoulli"){
       pd=1-exp(-lamd)
