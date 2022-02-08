@@ -7,7 +7,7 @@ e2dist<- function (x, y){
 init.RT=function(data,inits=NA,M=NA){
   library(abind)
   y.ID=data$y.ID
-  y.noID=data$y.noID
+  this.j=data$this.j
   X<-as.matrix(data$X)
   J<-nrow(X)
   K<- dim(y.ID)[3]
@@ -19,27 +19,22 @@ init.RT=function(data,inits=NA,M=NA){
   if(length(dim(y.ID))!=3){
     stop("dim(y.ID) must be 3. Reduced to 2 during initialization")
   }
-  if(length(dim(y.noID))!=3){
-    stop("dim(y.noID) must be 3. Reduced to 2 during initialization")
-  }
-  
+
   buff<- data$buff
   xlim<- c(min(X[,1]),max(X[,1]))+c(-buff, buff)
   ylim<- c(min(X[,2]),max(X[,2]))+c(-buff, buff)
   
   ##pull out initial values
   lam0=inits$lam0
-  sigma<- inits$sigma
+  sigma=inits$sigma
   
   #initialize IDs
   #This initialization algorithm matches samples with consistent G.noID to same ID if they are caught
   #at same trap. Requires larger data augmentation than necessary for sampling. Improvement to implement:
   #combine if consistent G.noID and caught at traps within a distance consistent with initial sigma.
-  n.samples=nrow(y.noID)
+  n.samples=length(this.j)
   ID=rep(NA,n.samples)
   nextID=n.ID+1
-  y.noID2D=apply(y.noID,c(1,2),sum)
-  this.j=apply(y.noID2D,1,function(x){which(x>0)})
   y.ID2D=apply(y.ID,c(1,2),sum)
   y.ID2D=rbind(y.ID2D,matrix(0,nrow=M-n.ID,ncol=J))
   y.true2D=y.ID2D

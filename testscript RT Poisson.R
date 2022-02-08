@@ -16,12 +16,22 @@ X<- expand.grid(3:11,3:11) #make a trapping array
 #sample thinning parameter
 theta.thin=0.25
 
-data=sim.RT(N=N,lam0=lam0,sigma=sigma,K=K,X=X,buff=buff,theta.thin=theta.thin)
+data=sim.RT(N=N,lam0=lam0,sigma=sigma,K=K,X=X,buff=buff,theta.thin=theta.thin,obstype="poisson")
+
+#What is the observed data?
+str(data$y.ID) #the observed ID detections
+head(data$this.j) #the trap of detection for all unidentified detections
+head(data$this.k) #occasion of capture, but not used in this 2D data sampler
+
 
 ##Fit model in Nimble##
 
 #data augmentation level
 M=175
+
+#trap operation vector.
+J=nrow(X)
+K1D=rep(K,J)
 
 inits=list(lam0=1,sigma=1) #ballpark inits to build data
 
@@ -35,7 +45,7 @@ Niminits <- list(z=nimbuild$z,s=nimbuild$s,ID=nimbuild$ID,capcounts=rowSums(nimb
 
 #constants for Nimble
 J=nrow(data$X)
-constants<-list(M=M,J=J,K=K,K1D=data$K1D,n.samples=nimbuild$n.samples,xlim=data$xlim,ylim=data$ylim)
+constants<-list(M=M,J=J,K=K,K1D=K1D,n.samples=nimbuild$n.samples,xlim=data$xlim,ylim=data$ylim)
 
 # Supply data to Nimble. Note, y.true is completely latent.
 z.data=c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
@@ -65,7 +75,7 @@ conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,
 #and replace it with the custom "IDSampler"
 conf$removeSampler("y.true")
 conf$addSampler(target = paste0("y.true[1:",M,",1:",J,"]"),
-                type = 'IDSampler',control = list(M=M,J=J,K1D=data$K1D,n.samples=nimbuild$n.samples,
+                type = 'IDSampler',control = list(M=M,J=J,K1D=K1D,n.samples=nimbuild$n.samples,
                                                   n.ID=data$n.ID,this.j=nimbuild$this.j),
                 silent = TRUE)
 
@@ -108,3 +118,6 @@ mvSamples = as.matrix(Cmcmc$mvSamples)
 plot(mcmc(mvSamples[2:nrow(mvSamples),]))
 
 data$n.cap #true number of captured individuals
+
+
+mvSamples2 = as.matrix(Cmcmc$mvSamples2)

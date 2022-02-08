@@ -5,8 +5,8 @@ e2dist<- function (x, y){
 }
 
 sim.RT<-
-  function(N=NA,lam0=NA,sigma=NA,K=10,X=NA,buff=NA,
-           theta.thin=NA,K1D=NA,tlocs=0){
+  function(N=NA,lam0=NA,sigma=NA,theta.d=NA,K=10,X=NA,buff=NA,obstype="poisson",
+           theta.thin=NA,tlocs=0){
     library(abind)
     
     # simulate a population of activity centers
@@ -18,26 +18,29 @@ sim.RT<-
     lamd <-lam0 * exp(-D * D/(2 * sigma * sigma))
     J=nrow(X)
     
-    #trap operation
-    if(!any(is.na(K1D))){
-      if(any(K1D>K)){
-        stop("Some entries in K1D are greater than K.")
-      }
-      if(is.null(dim(K1D))){
-        if(length(K1D)!=J){
-          stop("K1D vector must be of length J.")
-        }
-      }
-    }else{
-      K1D=rep(K,J)
-    }
-    
     # Capture and mark individuals
     y.true <-array(0,dim=c(N,J,K))
-    for(i in 1:N){
-      for(j in 1:J){
-        y.true[i,j,]=rpois(K1D[j],lamd[i,j])
+    if(obstype=="bernoulli"){
+      pd=1-exp(-lamd)
+      for(i in 1:N){
+        for(j in 1:J){
+          y.true[i,j,]=rbinom(K,1,pd[i,j])
+        }
       }
+    }else if(obstype=="poisson"){
+      for(i in 1:N){
+        for(j in 1:J){
+          y.true[i,j,]=rpois(K,lamd[i,j])
+        }
+      }
+    }else if(obstype=="negbin"){
+      for(i in 1:N){
+        for(j in 1:J){
+          y.true[i,j,]=rnbinom(K,mu=lamd[i,j],size=theta.d)
+        }
+      } 
+    }else{
+      stop("obstype not recognized")
     }
     
     y.true.full=y.true
@@ -86,10 +89,19 @@ sim.RT<-
     IDd=which(rowSums(y.ID)!=0)
     n.ID=length(IDd)
     y.ID=y.ID[IDd,,]
+    
+    #observed capture data can be represented by site and occasion of each count member
+    this.j=this.k=rep(NA,n.samples.noID)
+    for(i in 1:n.samples.noID){
+      tmp=which(y.noID[i,,]==1,arr.ind=TRUE)
+      this.j[i]=tmp[1]
+      this.k[i]=tmp[2]
+    }
+    
 
-    out<-list(y.true=y.true,y.ID=y.ID,y.noID=y.noID,
+    out<-list(y.true=y.true,y.ID=y.ID,this.j=this.j,this.k=this.k,
               X=X,K=K,buff=buff,s=s,xlim=xlim,ylim=ylim,
-              ID=ID,n.ID=n.ID,K1D=K1D,
+              ID=ID,n.ID=n.ID,
               y.true.full=y.true.full,n.cap=n.cap)
     return(out)
   }
