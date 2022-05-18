@@ -4,7 +4,7 @@ e2dist<- function (x, y){
   matrix(dvec, nrow = nrow(x), ncol = nrow(y), byrow = F)
 }
 
-init.catRT=function(data,inits=NA,M=NA){
+init.catRT=function(data,inits=NA,M=NA,obstype="poisson"){
   library(abind)
   y.ID=data$y.ID
   this.j=data$this.j
@@ -164,7 +164,19 @@ init.catRT=function(data,inits=NA,M=NA){
     lamd[which(G.true[,1]==i), ]<-lam0[i]*exp(-D[which(G.true[,1]==i), ]^2/(2*sigma[i]^2))
   }
   
-  ll.y=dpois(y.true2D,K1D*lamd*z,log=TRUE)
+  if(obstype=="poisson"){
+    ll.y=dpois(y.true2D,K1D*lamd*z,log=TRUE)
+  }else if(obstype=="negbin"){
+    theta.d=inits$theta.d
+    ll.y=y.true2D*0
+    for(i in 1:M){
+      if(z[i]==1){
+        ll.y[i,]=dnbinom(y.true2D[i,],mu=lamd[i,],size=theta.d*K1D,log=TRUE)
+      }
+    }
+  }else{
+    stop("obstype not recognized")
+  }
   
   if(!is.finite(sum(ll.y)))stop("Starting observation model likelihood not finite. Possible error in K1D (if supplied by user) or problem initializing data.")
   
@@ -185,7 +197,7 @@ init.catRT=function(data,inits=NA,M=NA){
       }
     }
   }
-  return(list(s=s,z=z,G.true=G.true,ID=ID,G.noID=G.noID,y.ID=y.ID2D,y.true=y.true2D,K1D=K1D,
+  return(list(s=s,z=z,G.true=G.true,ID=ID,G.noID=G.noID,y.ID=y.ID2D,y.true=y.true2D,K1D=K1D,xlim=xlim,ylim=ylim,
          n.samples=n.samples,gammaMat=gammaMat,this.j=this.j,G.latent=G.latent,G.latent.ID=G.latent.ID))
 
 }

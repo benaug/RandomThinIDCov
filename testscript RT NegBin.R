@@ -1,16 +1,16 @@
 library(nimble)
 library(coda)
 source("sim.RT.R")
-source("NimbleModelRT Poisson.R")
-source("NimbleFunctionsRT Poisson.R")
+source("NimbleModelRT NegBin.R")
+source("NimbleFunctionsRT NegBin.R")
 source("init.RT.R")
 source("sSampler.R")
 
 ####Simulate some data####
 N=78
-#detection parameters
 lam0=0.5
 sigma=0.5
+theta.d=0.025
 
 K=10 #number of occasions
 buff=3 #state space buffer
@@ -18,7 +18,7 @@ X<- expand.grid(3:11,3:11) #make a trapping array
 #sample thinning parameter
 theta.thin=0.25
 
-data=sim.RT(N=N,lam0=lam0,sigma=sigma,K=K,X=X,buff=buff,theta.thin=theta.thin,obstype="poisson")
+data=sim.RT(N=N,lam0=lam0,sigma=sigma,theta.d=theta.d,K=K,X=X,buff=buff,theta.thin=theta.thin,obstype="negbin")
 
 #What is the observed data?
 str(data$y.ID) #the observed ID detections
@@ -37,15 +37,15 @@ K1D=rep(K,J)
 #add K1D to data
 data$K1D=K1D
 
-inits=list(lam0=1,sigma=1) #ballpark inits to build data
+inits=list(lam0=1,sigma=1,theta.d=0.1) #ballpark inits to build data
 
 #This function structures the simulated data to fit the model in Nimble (some more restructing below)
 #Also checks some inits
-nimbuild=init.RT(data,inits,M=M,obstype="poisson")
+nimbuild=init.RT(data,inits,M=M,obstype="negbin")
 
 #inits for nimble
 Niminits <- list(z=nimbuild$z,s=nimbuild$s,ID=nimbuild$ID,capcounts=rowSums(nimbuild$y.true),
-                 y.true=nimbuild$y.true,sigma=inits$sigma,lam0=inits$lam0,theta.thin=0.5)
+                 y.true=nimbuild$y.true,sigma=inits$sigma,lam0=inits$lam0,theta.d=inits$theta.d,theta.thin=0.5)
 
 #constants for Nimble
 J=nrow(data$X)
@@ -58,11 +58,11 @@ Nimdata<-list(y.true=matrix(NA,nrow=M,ncol=J),y.ID=nimbuild$y.ID,
               ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M))
 
 # set parameters to monitor
-parameters<-c('psi','lam0','sigma','theta.thin','N','n')
+parameters<-c('psi','lam0','sigma','theta.d','theta.thin','N','n')
 nt=1 #thinning rate
 #can also monitor a different set of parameters with a different thinning rate
 parameters2 <- c("ID")
-nt2=50#thin more
+nt2=25#thin more
 
 # Build the model, configure the mcmc, and compile
 start.time<-Sys.time()

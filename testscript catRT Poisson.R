@@ -4,6 +4,7 @@ source("NimbleModel catRT Poisson.R")
 source("NimbleFunctions catRT Poisson.R")
 source("init.catRT.R")
 source("sim.catRT.R")
+source("sSampler.R")
 
 ####Simulate some data####
 N=78
@@ -100,7 +101,7 @@ parameters<-c('psi','lam0','sigma','theta.thin','N','n','gammaMat')
 nt=1 #thinning rate
 #can also monitor a different set of parameters with a different thinning rate
 parameters2 <- c("ID")
-nt2=50#thin more
+nt2=25#thin more
 
 # Build the model, configure the mcmc, and compile
 start.time<-Sys.time()
@@ -139,10 +140,11 @@ for(i in 1:M){
 #should be a little more efficient. Slice seems better than block random walk
 conf$removeSampler(paste("s[1:",M,", 1:2]", sep=""))
 for(i in 1:M){
+  # conf$addSampler(target = paste("s[",i,", 1:2]", sep=""),
+  #                 type = 'RW_block',control=list(adaptive=TRUE),silent = TRUE)
   conf$addSampler(target = paste("s[",i,", 1:2]", sep=""),
-                  type = 'AF_slice',control=list(adaptive=TRUE),silent = TRUE)
-  # conf$addSampler(target = paste("s[",i,", 1:2]", sep=""), #do not adapt covariance bc s's not deterministically linked to unmarked individuals
-  #                 type = 'RW_block',control=list(adaptive=TRUE,adaptScaleOnly=TRUE,adaptInterval=500),silent = TRUE)
+                  type = 'sSampler',control=list(i=i,xlim=nimbuild$xlim,ylim=nimbuild$ylim,scale=1),silent = TRUE)
+  #scale parameter here is just the starting scale. It will be tuned.
 }
 
 #replace independent lam0 and sigma samplers with block sampler better accommodating for posterior covariance
@@ -151,7 +153,7 @@ for(i in 1:M){
 conf$removeSampler(c("lam0","sigma"))
 for(i in 1:n.levels[1]){
   conf$addSampler(target = c(paste("lam0[",i,"]",sep=""),paste("sigma[",i,"]",sep="")),
-                  type = 'AF_slice',
+                  type = 'RW_block',
                   control = list(adaptive=TRUE),
                   silent = TRUE)
 }

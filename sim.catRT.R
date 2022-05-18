@@ -49,6 +49,7 @@ sim.catRT<-
         }
       }
     }else if(obstype=="negbin"){
+      if(is.na(theta.d))stop("Must provide theta.d for negbin obstype")
       for(i in 1:N){
         for(j in 1:J){
           y.true[i,j,]=rnbinom(K,mu=lamd[i,j],size=theta.d)

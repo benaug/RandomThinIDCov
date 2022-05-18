@@ -1,32 +1,63 @@
 library(nimble)
 library(coda)
-source("sim.RT.R")
-source("NimbleModelRT Poisson.R")
-source("NimbleFunctionsRT Poisson.R")
-source("init.RT.R")
+source("NimbleModel catRT NegBin.R")
+source("NimbleFunctions catRT NegBin.R")
+source("init.catRT.R")
+source("sim.catRT.R")
 source("sSampler.R")
 
 ####Simulate some data####
 N=78
 #detection parameters
-lam0=0.5
-sigma=0.5
+#vary by 1st ID cov (say, male-female), set up for 2 levels here
+lam0=c(0.35,0.5)
+sigma=c(0.75,0.5)
+theta.d=0.1 #simulating 1 theta.d for all population groups
 
 K=10 #number of occasions
 buff=3 #state space buffer
 X<- expand.grid(3:11,3:11) #make a trapping array
-#sample thinning parameter
-theta.thin=0.25
 
-data=sim.RT(N=N,lam0=lam0,sigma=sigma,K=K,X=X,buff=buff,theta.thin=theta.thin,obstype="poisson")
+n.cat=2  #number of ID categories
 
-#What is the observed data?
-str(data$y.ID) #the observed ID detections
+gamma=IDcovs=vector("list",n.cat) #population frequencies of each category level. Assume equal here.
+n.levels=rep(2,n.cat) #number of levels per IDcat
+for(i in 1:n.cat){
+  gamma[[i]]=rep(1/n.levels[i],n.levels[i])
+  IDcovs[[i]]=1:n.levels[i]
+}
+theta.cat=rep(1,n.cat)#category level observation probabilities (probability you observe ID cov on capture)
+
+#sample thinning
+G.thin=2 #which ID cov is cov on thinning?
+theta.thin=c(0.5,0.25) #must have n.levels[G.thin] thinning rates
+
+##OK, what have we set up here? We have n.cat=2 ID covs. The data simulator will simulate
+#from different detection parameters for the 1st cov. The first cov has 2 values, 1 and 2,
+#and we have 2 lam0 and sigma parameters. We specify levels 1 and 2 are equal in the population
+gamma[[1]]
+#Then, since G.thin=2, the thinning rate varies by the 2nd ID cov, which also has 2 levels here and
+#equal frequencies.
+gamma[[2]]
+#because there are 2 levels for this thinning covariate, we have 2 "theta.thin" parameters
+theta.thin
+
+
+data=sim.catRT(N=N,lam0=lam0,sigma=sigma,theta.d=theta.d,K=K,X=X,buff=buff,n.cat=n.cat,theta.cat=theta.cat,
+               IDcovs=IDcovs,gamma=gamma,theta.thin=theta.thin,G.thin=G.thin,obstype="negbin")
+
+
+#What are the observed data?
+str(data$y.ID) #the identified samples
+str(data$G.ID) #the observed ID covs for detected individuals (some may be NA)
 head(data$this.j) #the trap of detection for all unidentified detections
 head(data$this.k) #occasion of capture, but not used in this 2D data sampler
+head(data$G.noID) #observed ID covs for every unobserved sample (some may be NA)
+nrow(data$G.noID)==length(data$this.j) #equal
 
+####Fit model in Nimble####
 
-##Fit model in Nimble##
+#Nimble code set up for G.thin=2 and ID covs a function of 1st ID covariate. Must modify if this is not the case.
 
 #data augmentation level
 M=175
@@ -37,32 +68,41 @@ K1D=rep(K,J)
 #add K1D to data
 data$K1D=K1D
 
-inits=list(lam0=1,sigma=1) #ballpark inits to build data
+inits=list(lam0=lam0,sigma=sigma,theta.d=0.25,gamma=gamma) #ballpark inits to build data
+
 
 #This function structures the simulated data to fit the model in Nimble (some more restructing below)
 #Also checks some inits
-nimbuild=init.RT(data,inits,M=M,obstype="poisson")
+nimbuild=init.catRT(data,inits,M=M,obstype="negbin")
+
+gammaMat=nimbuild$gammaMat
+G.true.init=nimbuild$G.true
+G.true.data=G.true.init*NA
+
 
 #inits for nimble
 Niminits <- list(z=nimbuild$z,s=nimbuild$s,ID=nimbuild$ID,capcounts=rowSums(nimbuild$y.true),
-                 y.true=nimbuild$y.true,sigma=inits$sigma,lam0=inits$lam0,theta.thin=0.5)
+                 y.true=nimbuild$y.true,sigma=inits$sigma,lam0=inits$lam0,theta.d=inits$theta.d,
+                 gammaMat=gammaMat,G.latent=nimbuild$G.latent,G.true=G.true.init)
 
 #constants for Nimble
 J=nrow(data$X)
-constants<-list(M=M,J=J,K=K,K1D=K1D,n.samples=nimbuild$n.samples,xlim=data$xlim,ylim=data$ylim)
+constants<-list(M=M,J=J,K=K,K1D=data$K1D,n.samples=nimbuild$n.samples,xlim=data$xlim,ylim=data$ylim,
+                n.cat=n.cat,n.levels=n.levels)
 
 # Supply data to Nimble. Note, y.true is completely latent.
 z.data=c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
 
 Nimdata<-list(y.true=matrix(NA,nrow=M,ncol=J),y.ID=nimbuild$y.ID,
-              ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M))
+              ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M),
+              G.true=G.true.data)
 
 # set parameters to monitor
-parameters<-c('psi','lam0','sigma','theta.thin','N','n')
+parameters<-c('psi','lam0','sigma','theta.d','theta.thin','N','n','gammaMat')
 nt=1 #thinning rate
 #can also monitor a different set of parameters with a different thinning rate
 parameters2 <- c("ID")
-nt2=50#thin more
+nt2=25#thin more
 
 # Build the model, configure the mcmc, and compile
 start.time<-Sys.time()
@@ -71,7 +111,6 @@ Rmodel <- nimbleModel(code=NimModel, constants=constants, data=Nimdata,check=FAL
 conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,
                       monitors2=parameters2,nt2=nt2,useConjugacy = TRUE) 
 
-#conf$printSamplers() #shows the samplers used for each parameter and latent variable
 
 ###Two *required* sampler replacements
 
@@ -79,9 +118,22 @@ conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,
 #and replace it with the custom "IDSampler"
 conf$removeSampler("y.true")
 conf$addSampler(target = paste0("y.true[1:",M,",1:",J,"]"),
-                type = 'IDSampler',control = list(M=M,J=J,K1D=K1D,n.samples=nimbuild$n.samples,
-                                                  n.ID=data$n.ID,this.j=nimbuild$this.j),
+                type = 'IDSampler',control = list(M=M,J=J,K1D=data$K1D,n.cat=n.cat,
+                                          n.samples=nimbuild$n.samples,n.ID=data$n.ID,
+                                      this.j=nimbuild$this.j,G.noID=nimbuild$G.noID,
+                                      G.latent.ID=nimbuild$G.latent.ID),
                 silent = TRUE)
+
+#replace default G.true sampler, which is not correct, with custom sampler for G.true, "GSampler"
+conf$removeSampler("G.true")
+for(i in 1:M){
+  for(m in 1:n.cat){ #don't need to update first cat bc it is mark status
+    conf$addSampler(target = paste("G.true[",i,",",m,"]", sep=""),
+                    type = 'GSampler',
+                    control = list(i = i,m=m,M=M,n.cat=n.cat,n.samples=nimbuild$n.samples,
+                                   n.levels=n.levels,G.noID=nimbuild$G.noID), silent = TRUE)
+  }
+}
 
 ###Two *optional* sampler replacements:
 
@@ -100,10 +152,12 @@ for(i in 1:M){
 #should improve mixing and increase posterior effective sample size. AF_slice works better than block RW.
 #Need to not use this update or modify it when using lam0 or sigma covariates.
 conf$removeSampler(c("lam0","sigma"))
-conf$addSampler(target = c("lam0","sigma"),
+for(i in 1:n.levels[1]){
+  conf$addSampler(target = c(paste("lam0[",i,"]",sep=""),paste("sigma[",i,"]",sep="")),
                   type = 'RW_block',
                   control = list(adaptive=TRUE),
                   silent = TRUE)
+}
 
 # Build and compile
 Rmcmc <- buildMCMC(conf)
@@ -136,3 +190,4 @@ data$ID[check.sample]
 
 #individual numbers larger than n.cap were not captured and identified
 data$n.cap
+

@@ -21,6 +21,7 @@ sim.RT<-
     # Capture individuals
     y.true <-array(0,dim=c(N,J,K))
     if(obstype=="bernoulli"){
+      if(is.na(lam0))stop("must provide lam0 for bernoulli obstype")
       pd=1-exp(-lamd)
       for(i in 1:N){
         for(j in 1:J){
@@ -28,12 +29,15 @@ sim.RT<-
         }
       }
     }else if(obstype=="poisson"){
+      if(is.na(lam0))stop("must provide lam0 for poisson obstype")
       for(i in 1:N){
         for(j in 1:J){
           y.true[i,j,]=rpois(K,lamd[i,j])
         }
       }
     }else if(obstype=="negbin"){
+      if(is.na(lam0))stop("must provide lam0 for negbin obstype")
+      if(is.na(theta.d))stop("Must provide theta.d for negbin obstype")
       for(i in 1:N){
         for(j in 1:J){
           y.true[i,j,]=rnbinom(K,mu=lamd[i,j],size=theta.d)
