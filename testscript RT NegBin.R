@@ -6,6 +6,9 @@ source("NimbleFunctionsRT NegBin.R")
 source("init.RT.R")
 source("sSampler.R")
 
+nimble:::setNimbleOption('MCMCjointlySamplePredictiveBranches', FALSE)
+nimbleOptions('MCMCjointlySamplePredictiveBranches') 
+
 ####Simulate some data####
 N=78
 lam0=0.5
@@ -66,24 +69,25 @@ start.time<-Sys.time()
 Rmodel <- nimbleModel(code=NimModel, constants=constants, data=Nimdata,check=FALSE,
                       inits=Niminits)
 conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,
-                      monitors2=parameters2,nt2=nt2,useConjugacy = TRUE) 
+                      monitors2=parameters2,thin2=nt2,useConjugacy = TRUE) 
 
 #conf$printSamplers() #shows the samplers used for each parameter and latent variable
 
-###Two *required* sampler replacements
+###One *required* sampler replacements
 
 ##Here, we remove the default samplers for y.true and y.event, which are not correct
 #and replace it with the custom "IDSampler"
 conf$removeSampler("y.true")
 conf$addSampler(target = paste0("y.true[1:",M,",1:",J,"]"),
                 type = 'IDSampler',control = list(M=M,J=J,K1D=K1D,n.samples=nimbuild$n.samples,
-                                                  n.ID=data$n.ID,this.j=nimbuild$this.j),
+                                                  this.j=nimbuild$this.j),
                 silent = TRUE)
 
 ###Two *optional* sampler replacements:
 
 #replace default activity center sampler that updates x and y locations separately with a joint update
-#should be a little more efficient. Slice seems better than block random walk
+#a little more efficient. sSampler below only tunes s when z=1. Should better tune activity centers for 
+#uncaptured individuals
 conf$removeSampler(paste("s[1:",M,", 1:2]", sep=""))
 for(i in 1:M){
   # conf$addSampler(target = paste("s[",i,", 1:2]", sep=""),

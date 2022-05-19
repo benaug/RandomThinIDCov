@@ -6,6 +6,9 @@ source("init.catRT.R")
 source("sim.catRT.R")
 source("sSampler.R")
 
+nimble:::setNimbleOption('MCMCjointlySamplePredictiveBranches', FALSE)
+nimbleOptions('MCMCjointlySamplePredictiveBranches') 
+
 ####Simulate some data####
 N=78
 #detection parameters
@@ -106,7 +109,7 @@ start.time<-Sys.time()
 Rmodel <- nimbleModel(code=NimModel, constants=constants, data=Nimdata,check=FALSE,
                       inits=Niminits)
 conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,
-                      monitors2=parameters2,nt2=nt2,useConjugacy = TRUE) 
+                      monitors2=parameters2,thin2=nt2,useConjugacy = TRUE) 
 
 
 ###Two *required* sampler replacements

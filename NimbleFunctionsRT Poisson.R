@@ -109,7 +109,6 @@ IDSampler <- nimbleFunction(
     J <- control$J
     K1D <- control$K1D
     n.samples <- control$n.samples
-    n.ID <- control$n.ID
     this.j <- control$this.j
     calcNodes <- model$getDependencies(target)
   },
@@ -201,7 +200,7 @@ IDSampler <- nimbleFunction(
       }
     }
     
-    #put everything back into the model$stuff after updating y.sight.true, y.sight.true.event
+    #put everything back into the model$stuff
     model$y.true <<- y.true
     model$ID <<- ID.curr
     model.lp.proposed <- model$calculate(calcNodes) #update logprob

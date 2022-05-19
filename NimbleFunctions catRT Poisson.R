@@ -267,7 +267,7 @@ IDSampler <- nimbleFunction(
       }
     }
     
-    #put everything back into the model$stuff after updating y.sight.true, y.sight.true.event
+    #put everything back into the model$stuff
     model$y.true <<- y.true
     model$ID <<- ID.curr
     model$G.latent <<- G.latent

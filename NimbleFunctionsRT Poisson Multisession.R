@@ -18,10 +18,8 @@ GetDetectionRate <- nimbleFunction(
   }
 )
 
-#Vectorized observation model that also prevents z from being turned off if an unmarked ind currently has samples.
-#also skips likelihood eval when z=0
-dNBVector <- nimbleFunction(
-  run = function(x = double(1), p = double(1), theta.d = double(1), z = double(0),
+dPoissonVector <- nimbleFunction(
+  run = function(x = double(1), lambda = double(1), z = double(0),
                  log = integer(0)) {
     returnType(double(0))
     if(z==0){
@@ -31,17 +29,16 @@ dNBVector <- nimbleFunction(
         return(0)
       }
     }else{
-      logProb <- sum(dnbinom(x, p = p, size = theta.d, log = TRUE))
+      logProb <- sum(dpois(x, lambda = lambda, log = TRUE))
       return(logProb)
     }
   }
 )
-
-#dummy random vector generator to make nimble happy
-rNBVector <- nimbleFunction(
-  run = function(n = integer(0),p = double(1),theta.d = double(1), z = double(0)) {
+#make dummy random vector generator to make nimble happy
+rPoissonVector <- nimbleFunction(
+  run = function(n = integer(0),lambda = double(1), z = double(0)) {
     returnType(double(1))
-    J=nimDim(p)[1]
+    J=nimDim(lambda)[1]
     out=numeric(J,value=0)
     return(out)
   }
@@ -113,12 +110,14 @@ IDSampler <- nimbleFunction(
     K1D <- control$K1D
     n.samples <- control$n.samples
     this.j <- control$this.j
+    g <- control$g
     calcNodes <- model$getDependencies(target)
   },
   run = function() {
-    z <- model$z
-    y.true <- model$y.true
-    y.ID <- model$y.ID
+    z <- model$z[g,1:M]
+    y.true <- model$y.true[g,1:M,1:J]
+    y.ID <- model$y.ID[g,1:M,1:J]
+    lam <- model$lam[g,1:M,1:J]
     
     #precalculate match. Does sample l match individual i?
     match=matrix(TRUE,nrow=n.samples,ncol=M) #start with all TRUE
@@ -134,7 +133,7 @@ IDSampler <- nimbleFunction(
     for(i in 1:M){
       if(z[i]==1){
         for(j in 1:J){
-          ll.y[i,j] <- dnbinom(y.true[i,j],size=model$theta.d[1]*model$K1D[j],prob=model$p[i,j],log=TRUE)
+          ll.y[i,j] <-  dpois(y.true[i,j],K1D[j]*lam[i,j],log=TRUE)
         }
       }
     }
@@ -142,7 +141,7 @@ IDSampler <- nimbleFunction(
       if(z[i]==1){
         for(j in 1:J){
           if(y.true[i,j]>0){
-            ll.y.ID[i,j] <- dbinom(y.ID[i,j],y.true[i,j],model$theta.thin[1],log=TRUE)
+            ll.y.ID[i,j] <- dbinom(y.ID[i,j],y.true[i,j],model$theta.thin[g],log=TRUE)
           }
         }
       }
@@ -150,13 +149,13 @@ IDSampler <- nimbleFunction(
     
     ll.y.cand <- ll.y
     ll.y.ID.cand <- ll.y.ID
-    ID.curr <- model$ID
+    ID.curr <- model$ID[g,1:n.samples]
 
     ###update IDs
     for(l in 1:n.samples){#for all samples without known IDs
       ID.cand=ID.curr
       y.true.cand=y.true
-      propprobs=model$lam[1:M,this.j[l]]
+      propprobs=lam[1:M,this.j[l]]
       for(i in 1:M){ #zero out nonmatches and z=0
         if(!match[l,i]){
           propprobs[i]=0
@@ -174,11 +173,8 @@ IDSampler <- nimbleFunction(
           #new y.true's - move sample from ID to ID.cand
           y.true.cand[ID.curr[l],this.j[l]]=y.true[ID.curr[l],this.j[l]]-1
           y.true.cand[ID.cand[l],this.j[l]]=y.true[ID.cand[l],this.j[l]]+1
-          
-          #if theta is a function of individual or trap covariates, need to fix these 2 lines below, e.g., size=model$theta[swapped[1],this.j[l]]*model$K1D[this.j[l]]
-          ll.y.cand[swapped[1],this.j[l]]=dnbinom(y.true.cand[swapped[1],this.j[l]],size=model$theta.d[1]*model$K1D[this.j[l]],prob=model$p[swapped[1],this.j[l]],log=TRUE)
-          ll.y.cand[swapped[2],this.j[l]]=dnbinom(y.true.cand[swapped[2],this.j[l]],size=model$theta.d[1]*model$K1D[this.j[l]],prob=model$p[swapped[2],this.j[l]],log=TRUE)
-          ll.y.ID.cand[swapped,this.j[l]] <- dbinom(y.ID[swapped,this.j[l]],y.true.cand[swapped,this.j[l]],model$theta.thin,log=TRUE)
+          ll.y.cand[swapped,this.j[l]]=dpois(y.true.cand[swapped,this.j[l]],lam[swapped,this.j[l]]*K1D[this.j[l]],log=TRUE)
+          ll.y.ID.cand[swapped,this.j[l]] <- dbinom(y.ID[swapped,this.j[l]],y.true.cand[swapped,this.j[l]],model$theta.thin[g],log=TRUE)
           
           #select sample to move proposal probabilities
           #P(select a sample of this type (not ID'd) for this ID)*P(select this j|sample of this type and this ID)
@@ -207,9 +203,125 @@ IDSampler <- nimbleFunction(
     }
     
     #put everything back into the model$stuff
-    model$y.true <<- y.true
-    model$ID <<- ID.curr
+    model$y.true[g,1:M,1:J] <<- y.true
+    model$ID[g,1:n.samples] <<- ID.curr
     model.lp.proposed <- model$calculate(calcNodes) #update logprob
+    copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+  },
+  methods = list( reset = function () {} )
+)
+
+#Required custom update for number of calls
+zSampler <- nimbleFunction(
+  contains = sampler_BASE,
+  setup = function(model, mvSaved, target, control) {
+    g <- control$g
+    J <- control$J
+    M <- control$M
+    inds.detected <- control$inds.detected
+    z.ups <- control$z.ups
+    xlim <- control$xlim
+    ylim <- control$ylim
+    y.nodes <- control$y.nodes
+    lam.nodes <- control$lam.nodes
+    N.node <- control$N.node
+    z.nodes <- control$z.nodes
+    calcNodes <- control$calcNodes
+  },
+  run = function() {
+    for(up in 1:z.ups){ #how many updates per iteration?
+      #propose to add/subtract 1
+      updown=rbinom(1,1,0.5) #p=0.5 is symmetric. If you change this, must account for asymmetric proposal
+      reject=FALSE #we auto reject if you select a detected call
+      if(updown==0){#subtract
+        #find all z's currently on
+        z.on=which(model$z[g,1:M]==1)
+        n.z.on=length(z.on)
+        pick=rcat(1,rep(1/n.z.on,n.z.on)) #select one of these individuals
+        pick=z.on[pick]
+        if(any(pick==inds.detected)){ #is this individual detected?
+          reject=TRUE #if so, we reject (could never select these inds, but then need to account for asymmetric proposal)
+        }
+        if(!reject){
+          #get initial logprobs for N and y
+          lp.initial.N <- model$getLogProb(N.node)
+          lp.initial.y <- model$getLogProb(y.nodes[pick])
+          
+          #propose new N/z
+          model$N[g] <<-  model$N[g] - 1
+          model$z[g,pick] <<- 0
+          
+          #turn lam off
+          model$calculate(lam.nodes[pick])
+          
+          #get proposed logprobs for N and y
+          lp.proposed.N <- model$calculate(N.node)
+          lp.proposed.y <- model$calculate(y.nodes[pick]) #will always be 0
+          
+          #MH step
+          log_MH_ratio <- (lp.proposed.N + lp.proposed.y) - (lp.initial.N + lp.initial.y)
+          accept <- decide(log_MH_ratio)
+          
+          if(accept) {
+            mvSaved["N",1][g] <<- model[["N"]][g]
+            for(j in 1:J){
+              mvSaved["lam",1][g,pick,j] <<- model[["lam"]][g,pick,j]
+            }
+            mvSaved["z",1][g,pick] <<- model[["z"]][g,pick]
+          }else{
+            model[["N"]][g] <<- mvSaved["N",1][g]
+            for(j in 1:J){
+              model[["lam"]][g,pick,j] <<- mvSaved["lam",1][g,pick,j]
+            }
+            model[["z"]][g,pick] <<- mvSaved["z",1][g,pick]
+            model$calculate(y.nodes[pick])
+            model$calculate(N.node)
+          }
+        }
+      }else{#add
+        if(model$N[g] < M){ #cannot update if z maxed out. Need to raise M
+          z.off=which(model$z[g,1:M]==0)
+          n.z.off=length(z.off)
+          pick=rcat(1,rep(1/n.z.off,n.z.off)) #select one of these individuals
+          pick=z.off[pick]
+          
+          #get initial logprobs for N and y
+          lp.initial.N <- model$getLogProb(N.node)
+          lp.initial.y <- model$getLogProb(y.nodes[pick]) #will always be 0
+          
+          #propose new N/z
+          model$N[g] <<-  model$N[g] + 1
+          model$z[g,pick] <<- 1
+          
+          #turn lam on
+          model$calculate(lam.nodes[pick])
+          
+          #get proposed logprobs for N and y
+          lp.proposed.N <- model$calculate(N.node)
+          lp.proposed.y <- model$calculate(y.nodes[pick])
+          
+          #MH step
+          log_MH_ratio <- (lp.proposed.N + lp.proposed.y) - (lp.initial.N + lp.initial.y)
+          accept <- decide(log_MH_ratio)
+          if(accept) {
+            mvSaved["N",1][g] <<- model[["N"]][g]
+            for(j in 1:J){
+              mvSaved["lam",1][g,pick,j] <<- model[["lam"]][g,pick,j]
+            }
+            mvSaved["z",1][g,pick] <<- model[["z"]][g,pick]
+          }else{
+            model[["N"]][g] <<- mvSaved["N",1][g]
+            for(j in 1:J){
+              model[["lam"]][g,pick,j] <<- mvSaved["lam",1][g,pick,j]
+            }
+            model[["z"]][g,pick] <<- mvSaved["z",1][g,pick]
+            model$calculate(y.nodes[pick])
+            model$calculate(N.node)
+          }
+        }
+      }
+    }
+    #copy back to mySaved to update logProbs which was not done above
     copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
   },
   methods = list( reset = function () {} )
