@@ -6,7 +6,7 @@ e2dist<- function (x, y){
 
 sim.RT<-
   function(N=NA,lam0=NA,sigma=NA,theta.d=NA,K=10,X=NA,buff=NA,obstype="poisson",
-           theta.thin=NA,tlocs=0){
+           theta.thin=NA,K1D=NA){
     library(abind)
     
     # simulate a population of activity centers
@@ -18,6 +18,20 @@ sim.RT<-
     lamd <-lam0 * exp(-D * D/(2 * sigma * sigma))
     J=nrow(X)
     
+    #trap operation
+    if(!any(is.na(K1D))){
+      if(any(K1D>K)){
+        stop("Some entries in K1D are greater than K.")
+      }
+      if(is.null(dim(K1D))){
+        if(length(K1D)!=J){
+          stop("K1D vector must be of length J.")
+        }
+      }
+    }else{
+      K1D=rep(K,J)
+    }
+    
     # Capture individuals
     y.true <-array(0,dim=c(N,J,K))
     if(obstype=="bernoulli"){
@@ -25,14 +39,14 @@ sim.RT<-
       pd=1-exp(-lamd)
       for(i in 1:N){
         for(j in 1:J){
-          y.true[i,j,]=rbinom(K,1,pd[i,j])
+          y.true[i,j,1:K1D[j]]=rbinom(K1D[j],1,pd[i,j])
         }
       }
     }else if(obstype=="poisson"){
       if(is.na(lam0))stop("must provide lam0 for poisson obstype")
       for(i in 1:N){
         for(j in 1:J){
-          y.true[i,j,]=rpois(K,lamd[i,j])
+          y.true[i,j,1:K1D[j]]=rpois(K1D[j],lamd[i,j])
         }
       }
     }else if(obstype=="negbin"){
@@ -40,7 +54,7 @@ sim.RT<-
       if(is.na(theta.d))stop("Must provide theta.d for negbin obstype")
       for(i in 1:N){
         for(j in 1:J){
-          y.true[i,j,]=rnbinom(K,mu=lamd[i,j],size=theta.d)
+          y.true[i,j,1:K1D[j]]=rnbinom(K1D[j],mu=lamd[i,j],size=theta.d)
         }
       } 
     }else{
@@ -104,7 +118,7 @@ sim.RT<-
     
 
     out<-list(y.true=y.true,y.ID=y.ID,this.j=this.j,this.k=this.k,
-              X=X,K=K,buff=buff,s=s,xlim=xlim,ylim=ylim,
+              X=X,K=K,K1D=K1D,buff=buff,s=s,xlim=xlim,ylim=ylim,
               ID=ID,n.ID=n.ID,
               y.true.full=y.true.full,n.cap=n.cap)
     return(out)

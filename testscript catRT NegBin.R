@@ -12,7 +12,7 @@ N=78
 #vary by 1st ID cov (say, male-female), set up for 2 levels here
 lam0=c(0.35,0.5)
 sigma=c(0.75,0.5)
-theta.d=0.1 #simulating 1 theta.d for all population groups
+theta.d=0.1 #simulating 1 theta.d for all population groups (negbin overdispersion)
 
 K=10 #number of occasions
 buff=3 #state space buffer
@@ -62,11 +62,8 @@ nrow(data$G.noID)==length(data$this.j) #equal
 #data augmentation level
 M=175
 
-#trap operation vector.
-J=nrow(X)
-K1D=rep(K,J)
-#add K1D to data
-data$K1D=K1D
+J=nrow(X) #number of detectors
+K1D=data$K1D #pull out trap operation
 
 inits=list(lam0=lam0,sigma=sigma,theta.d=0.25,gamma=gamma) #ballpark inits to build data
 

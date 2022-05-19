@@ -31,11 +31,8 @@ head(data$this.k) #occasion of capture, but not used in this 2D data sampler
 #data augmentation level
 M=175
 
-#trap operation vector.
-J=nrow(X)
-K1D=rep(K,J)
-#add K1D to data
-data$K1D=K1D
+J=nrow(X) #number of detectors
+K1D=data$K1D #pull out trap operation
 
 inits=list(lam0=1,sigma=1,theta.d=0.1) #ballpark inits to build data
 

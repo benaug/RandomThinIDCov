@@ -61,11 +61,8 @@ nrow(data$G.noID)==length(data$this.j) #equal
 #data augmentation level
 M=175
 
-#trap operation vector.
-J=nrow(X)
-K1D=rep(K,J)
-#add K1D to data
-data$K1D=K1D
+J=nrow(X) #number of detectors
+K1D=data$K1D #pull out trap operation
 
 inits=list(lam0=lam0,sigma=sigma,gamma=gamma) #ballpark inits to build data
 
