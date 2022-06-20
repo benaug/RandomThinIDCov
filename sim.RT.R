@@ -108,13 +108,15 @@ sim.RT<-
     allIDs=1:nrow(y.ID) #all guys in y.ID with samples before subsampling
     ID.map=allIDs #what we'll use to map old IDs to new IDs
     fix=which(rowSums(y.ID)==0) #guys subsampled out
-    ID.map[fix]=(max(allIDs)+1):(max(allIDs)+length(fix)) #give these guys new ID numbers not already used
-    #then subtract the removed guys from ID numbers of other guy's samples
-    for(i in 1:length(fix)){
-      ID.map[ID.map>=fix[i]]=ID.map[ID.map>=fix[i]]-1
-      fix=fix-1
+    if(length(fix)>0){
+      ID.map[fix]=(max(allIDs)+1):(max(allIDs)+length(fix)) #give these guys new ID numbers not already used
+      #then subtract the removed guys from ID numbers of other guy's samples
+      for(i in 1:length(fix)){
+        ID.map[ID.map>=fix[i]]=ID.map[ID.map>=fix[i]]-1
+        fix=fix-1
+      }
+      ID=ID.map[ID]
     }
-    ID=ID.map[ID]
     
     #remove inds subsampled out of y.ID
     IDd=which(rowSums(y.ID)!=0)
