@@ -120,7 +120,20 @@ sim.catRT<-
     }
     
    if(!all(y.test==y.true))stop("Error reassembling data. Bug in simulator.") #shouldn't happen 
-
+   
+     #reorder ID's if any y.ID inds end up with 0 samples after subsampling.
+    #only needed to compare posterior ID match probs to correct ID #
+    allIDs=1:nrow(y.ID) #all guys in y.ID with samples before subsampling
+    ID.map=allIDs #what we'll use to map old IDs to new IDs
+    fix=which(rowSums(y.ID)==0) #guys subsampled out
+    ID.map[fix]=(max(allIDs)+1):(max(allIDs)+length(fix)) #give these guys new ID numbers not already used
+    #then subtract the removed guys from ID numbers of other guy's samples
+    for(i in 1:length(fix)){
+      ID.map[ID.map>=fix[i]]=ID.map[ID.map>=fix[i]]-1
+      fix=fix-1
+    }
+    ID=ID.map[ID]
+    
     #summarize captured ind data
     IDd=which(rowSums(y.ID)!=0)
     n.ID=length(IDd)
@@ -143,6 +156,12 @@ sim.catRT<-
       this.k[i]=tmp[2]
     }
     
+    #reorder ID, this.j, this.k, G.noID by ID (not required)
+    ord=order(ID)
+    ID=ID[ord]
+    this.j=this.j[ord]
+    this.k=this.k[ord]
+    G.noID=G.noID[ord,]
 
     out<-list(y.true=y.true,y.ID=y.ID,this.j=this.j,this.k=this.k,
               G.full=G.full,G.ID=G.ID,G.noID=G.noID,

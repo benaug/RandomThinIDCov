@@ -182,12 +182,11 @@ data$n.cap #true number of captured individuals
 #look at ID posteriors. Not removing any burnin here...
 mvSamples2 = as.matrix(Cmcmc$mvSamples2)
 
-check.sample=2
+check.sample=1
 #posterior prob this sample belongs to each individual number
-round(table(mvSamples2[,check.sample])/nrow(mvSamples2),2)
-#truth
+round(table(mvSamples2[,check.sample])/(nrow(mvSamples2)-1),2)
+#truth (for simulated data sets)
 data$ID[check.sample]
-
-#individual numbers larger than n.cap were not captured and identified
-data$n.cap
-
+#These should match data$ID for all individuals with identified captures, 1, ... n.ID
+#individuals with ID>n.ID will have different numbers than data$ID (but samples with same true ID should tend to have same posterior ID)
+data$n.ID
