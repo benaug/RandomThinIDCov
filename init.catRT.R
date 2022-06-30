@@ -165,7 +165,12 @@ init.catRT=function(data,inits=NA,M=NA,obstype="poisson"){
   }
   
   if(obstype=="poisson"){
-    ll.y=dpois(y.true2D,K1D*lamd*z,log=TRUE)
+    ll.y=y.true2D*0
+    for(i in 1:M){
+      if(z[i]==1){
+        ll.y[i,]=dpois(y.true2D[i,],K1D*lamd[i,]*z[i],log=TRUE)
+      }
+    }
   }else if(obstype=="negbin"){
     theta.d=inits$theta.d
     ll.y=y.true2D*0
