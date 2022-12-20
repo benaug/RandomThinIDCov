@@ -5,8 +5,8 @@ e2dist<- function (x, y){
 }
 
 sim.RT<-
-  function(N=NA,lam0=NA,sigma=NA,theta.d=NA,K=10,X=NA,buff=NA,obstype="poisson",
-           theta.thin=NA,K1D=NA){
+  function(N=NA,lam0=NA,p0=NA,sigma=NA,theta.d=NA,lambda.d=NA,K=NA,X=NA,buff=NA,obstype="poisson",
+           theta.thin=NA,K1D=NA,K2D=NA){
     library(abind)
     
     # simulate a population of activity centers
@@ -30,6 +30,17 @@ sim.RT<-
       }
     }else{
       K1D=rep(K,J)
+    }
+    
+    if(!any(is.na(K2D))){
+      if(nrow(K2D)!=J){
+        stop("K2D must be matrix of dimension J x K")
+      }
+      if(ncol(K2D)!=K){
+        stop("K2D must be matrix of dimension J x K")
+      }
+    }else{
+      K2D=matrix(1,J,K)
     }
     
     # Capture individuals
@@ -57,6 +68,23 @@ sim.RT<-
           y.true[i,j,1:K1D[j]]=rnbinom(K1D[j],mu=lamd[i,j],size=theta.d)
         }
       } 
+    }else if(obstype=="negbinHurdle"){
+      if(is.na(p0))stop("must provide p0 for negbinHurdle obstype")
+      if(is.na(lambda.d))stop("must provide lambda.d for negbinHurdle obstype")
+      if(is.na(theta.d))stop("must provide theta.d for negbinHurdle obstype")
+      library(VGAM)
+      pd<- p0*exp(-D*D/(2*sigma*sigma))
+      y.det=array(0,dim=c(N,J,K))
+      for(i in 1:N){
+        for(j in 1:J){
+          for(k in 1:K){
+            y.det[i,j,k]=rbinom(1,1,pd[i,j])
+            if(y.det[i,j,k]==1){
+              y.true[i,j,k]=rzanegbin(1,munb=lambda.d,size=theta.d,pobs0=0)
+            }
+          }
+        }
+      }
     }else{
       stop("obstype not recognized")
     }
@@ -139,7 +167,7 @@ sim.RT<-
     
 
     out<-list(y.true=y.true,y.ID=y.ID,this.j=this.j,this.k=this.k,
-              X=X,K=K,K1D=K1D,buff=buff,s=s,xlim=xlim,ylim=ylim,
+              X=X,K=K,K1D=K1D,K2D=K2D,buff=buff,s=s,xlim=xlim,ylim=ylim,
               ID=ID,n.ID=n.ID,y.true.full=y.true.full,n.cap=n.cap)
     return(out)
   }

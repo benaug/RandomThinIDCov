@@ -6,33 +6,35 @@ source("init.catRT.R")
 source("sim.catRT.R")
 source("sSampler.R")
 
-nimble:::setNimbleOption('MCMCjointlySamplePredictiveBranches', FALSE)
-nimbleOptions('MCMCjointlySamplePredictiveBranches') 
+#If using Nimble version 0.13.1 and you must run this line 
+nimbleOptions(determinePredictiveNodesInModel = FALSE)
+# #If using Nimble before version 0.13.1, run this line instead
+# nimble:::setNimbleOption('MCMCjointlySamplePredictiveBranches', FALSE)
 
 ####Simulate some data####
-N=78
+N <- 78
 #detection parameters
 #vary by 1st ID cov (say, male-female), set up for 2 levels here
-lam0=c(0.35,0.5)
-sigma=c(0.75,0.5)
+lam0 <- c(0.35,0.5)
+sigma <- c(0.75,0.5)
 
-K=10 #number of occasions
-buff=3 #state space buffer
-X<- expand.grid(3:11,3:11) #make a trapping array
+K <- 10 #number of occasions
+buff <- 3 #state space buffer
+X <- expand.grid(3:11,3:11) #make a trapping array
 
-n.cat=2  #number of ID categories
+n.cat <- 2  #number of ID categories
 
-gamma=IDcovs=vector("list",n.cat) #population frequencies of each category level. Assume equal here.
-n.levels=rep(2,n.cat) #number of levels per IDcat
+gamma <- IDcovs <- vector("list",n.cat) #population frequencies of each category level. Assume equal here.
+n.levels <- rep(2,n.cat) #number of levels per IDcat
 for(i in 1:n.cat){
-  gamma[[i]]=rep(1/n.levels[i],n.levels[i])
-  IDcovs[[i]]=1:n.levels[i]
+  gamma[[i]] <- rep(1/n.levels[i],n.levels[i])
+  IDcovs[[i]] <- 1:n.levels[i]
 }
-theta.cat=rep(1,n.cat)#category level observation probabilities (probability you observe ID cov on capture)
+theta.cat <- rep(1,n.cat)#category level observation probabilities (probability you observe ID cov on capture)
 
 #sample thinning
-G.thin=2 #which ID cov is cov on thinning?
-theta.thin=c(0.5,0.25) #must have n.levels[G.thin] thinning rates
+G.thin <- 2 #which ID cov is cov on thinning?
+theta.thin <- c(0.5,0.25) #must have n.levels[G.thin] thinning rates
 
 ##OK, what have we set up here? We have n.cat=2 ID covs. The data simulator will simulate
 #from different detection parameters for the 1st cov. The first cov has 2 values, 1 and 2,
@@ -45,7 +47,7 @@ gamma[[2]]
 theta.thin
 
 
-data=sim.catRT(N=N,lam0=lam0,sigma=sigma,K=K,X=X,buff=buff,n.cat=n.cat,theta.cat=theta.cat,
+data <- sim.catRT(N=N,lam0=lam0,sigma=sigma,K=K,X=X,buff=buff,n.cat=n.cat,theta.cat=theta.cat,
                IDcovs=IDcovs,gamma=gamma,theta.thin=theta.thin,G.thin=G.thin,obstype="poisson")
 
 
@@ -62,21 +64,21 @@ nrow(data$G.noID)==length(data$this.j) #equal
 #Nimble code set up for G.thin=2 and ID covs a function of 1st ID covariate. Must modify if this is not the case.
 
 #data augmentation level
-M=175
+M <- 175
 
-J=nrow(X) #number of detectors
-K1D=data$K1D #pull out trap operation
+J <- nrow(X) #number of detectors
+K1D <- data$K1D #pull out trap operation
 
-inits=list(lam0=lam0,sigma=sigma,gamma=gamma) #ballpark inits to build data
+inits <- list(lam0=lam0,sigma=sigma,gamma=gamma) #ballpark inits to build data
 
 
 #This function structures the simulated data to fit the model in Nimble (some more restructing below)
 #Also checks some inits
-nimbuild=init.catRT(data,inits,M=M)
+nimbuild <- init.catRT(data,inits,M=M)
 
-gammaMat=nimbuild$gammaMat
-G.true.init=nimbuild$G.true
-G.true.data=G.true.init*NA
+gammaMat <- nimbuild$gammaMat
+G.true.init <- nimbuild$G.true
+G.true.data <- G.true.init*NA
 
 
 #inits for nimble
@@ -85,28 +87,30 @@ Niminits <- list(z=nimbuild$z,s=nimbuild$s,ID=nimbuild$ID,capcounts=rowSums(nimb
                  gammaMat=gammaMat,G.latent=nimbuild$G.latent,G.true=G.true.init)
 
 #constants for Nimble
-J=nrow(data$X)
-constants<-list(M=M,J=J,K=K,K1D=data$K1D,n.samples=nimbuild$n.samples,xlim=data$xlim,ylim=data$ylim,
+J <- nrow(data$X)
+constants <- list(M=M,J=J,K1D=data$K1D,n.samples=nimbuild$n.samples,xlim=data$xlim,ylim=data$ylim,
                 n.cat=n.cat,n.levels=n.levels)
 
 # Supply data to Nimble. Note, y.true is completely latent.
-z.data=c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
+z.data <- c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
 
-Nimdata<-list(y.true=matrix(NA,nrow=M,ncol=J),y.ID=nimbuild$y.ID,
+Nimdata <- list(y.true=matrix(NA,nrow=M,ncol=J),y.ID=nimbuild$y.ID,
               ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M),
               G.true=G.true.data)
 
 # set parameters to monitor
-parameters<-c('psi','lam0','sigma','theta.thin','N','n','gammaMat')
-nt=1 #thinning rate
+parameters <- c('psi','lam0','sigma','theta.thin','N','n','gammaMat')
+nt <- 1 #thinning rate
 #can also monitor a different set of parameters with a different thinning rate
 parameters2 <- c("ID")
-nt2=25#thin more
+nt2 <- 25 #thin more
 
 # Build the model, configure the mcmc, and compile
-start.time<-Sys.time()
+start.time <- Sys.time()
 Rmodel <- nimbleModel(code=NimModel, constants=constants, data=Nimdata,check=FALSE,
                       inits=Niminits)
+#can use "nodes" argument in configureMCMC below to omit y.true and G.true that are replaced below for faster
+#configuration
 conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,
                       monitors2=parameters2,thin2=nt2,useConjugacy = TRUE) 
 
@@ -165,23 +169,23 @@ Cmodel <- compileNimble(Rmodel)
 Cmcmc <- compileNimble(Rmcmc, project = Rmodel)
 
 # Run the model.
-start.time2<-Sys.time()
+start.time2 <- Sys.time()
 Cmcmc$run(2500,reset=FALSE) #short run for demonstration. can keep running this line to get more samples
-end.time<-Sys.time()
+end.time <- Sys.time()
 end.time-start.time  # total time for compilation, replacing samplers, and fitting
 end.time-start.time2 # post-compilation run time
 
 
-mvSamples = as.matrix(Cmcmc$mvSamples)
+mvSamples <- as.matrix(Cmcmc$mvSamples)
 plot(mcmc(mvSamples[2:nrow(mvSamples),]))
 
 data$n.cap #true number of captured individuals
 
 
 #look at ID posteriors. Not removing any burnin here...
-mvSamples2 = as.matrix(Cmcmc$mvSamples2)
+mvSamples2 <- as.matrix(Cmcmc$mvSamples2)
 
-check.sample=1
+check.sample <- 1
 #posterior prob this sample belongs to each individual number
 round(table(mvSamples2[,check.sample])/(nrow(mvSamples2)-1),2)
 #truth (for simulated data sets)

@@ -17,18 +17,28 @@ getArea <- function(X=X,buff=buff){
 
 sim.RT.multisession <-
   function(N.session=NA,lambda=NA,lam0=NA,theta.d=NA,sigma=NA,K=NA,X=X,buff=NA,
-           theta.thin=NA,K1D=NA,obstype="poisson"){
-    if(length(lambda)!=N.session)stop("lambda must be of length N.session")
-    if(length(lam0)!=N.session)stop("lam0 must be of length N.session")
+           p0=NA,lambda.d=NA,theta.thin=NA,K1D=NA,K2D=NA,obstype="poisson"){
     if(length(sigma)!=N.session)stop("sigma must be of length N.session")
     if(length(K)!=N.session)stop("K must be of length N.session")
     if(length(X)!=N.session)stop("X must be of length N.session")
     if(length(buff)!=N.session)stop("buff must be of length N.session")
     if(length(theta.thin)!=N.session)stop("theta.thin must be of length N.session")
+    if(obstype%in%c("negbin","poisson")){
+      if(length(lam0)!=N.session)stop("lam0 must be of length N.session")
+    }
     if(obstype=="negbin"){
       if(length(theta.d)!=N.session)stop("theta.d must be of length N.session")
     }else{
+      #make a dummy to pass to sim.RT
       theta.d=rep(theta.d,N.session)
+    }
+    if(obstype=="negbinHurdle"){
+      if(length(p0)!=N.session)stop("p0 must be of length N.session")
+      if(length(lambda.d)!=N.session)stop("lambda.d must be of length N.session")
+    }else{
+      #make a dummy to pass to sim.RT
+      lambda.d=rep(lambda.d,N.session)
+      lam0=rep(lam0,N.session)
     }
     
     #realized N
@@ -49,21 +59,47 @@ sim.RT.multisession <-
     }
     
     #trap operation
-    if(!any(is.na(K1D))){
-      for(g in 1:N.session){
-        if(any(K1D[[g]]>K[g])){
-          stop("Some entries in K1D[[g]] are greater than K[g].")
-        }
-        if(is.null(dim(K1D[[g]]))){
-          if(length(K1D[[g]])!=J[g]){
-            stop("K1D[[g]] vector must be of length J[g].")
+    if(obstype!="negbinHurdle"){
+      if(!any(is.na(K1D))){
+        for(g in 1:N.session){
+          if(any(K1D[[g]]>K[g])){
+            stop("Some entries in K1D[[g]] are greater than K[g].")
+          }
+          if(is.null(dim(K1D[[g]]))){
+            if(length(K1D[[g]])!=J[g]){
+              stop("K1D[[g]] vector must be of length J[g].")
+            }
           }
         }
+      }else{
+        K1D=vector("list",N.session)
+        for(g in 1:N.session){
+          K1D[[g]]=rep(K[g],J[g])
+        }
+      }
+      K2D=vector("list",N.session)
+      for(g in 1:N.session){
+        K2D[[g]]=NA
       }
     }else{
+      if(!any(is.na(K2D))){
+        for(g in 1:N.session){
+          if(nrow(K2D[[g]])!=J[g]){
+            stop("K2D[[g]] must be a J[g] x K[g] matrix")
+          }
+          if(ncol(K2D[[g]])!=K[g]){
+            stop("K2D[[g]] must be a J[g] x K[g] matrix")
+          }
+        }
+      }else{
+        K2D=vector("list",N.session)
+        for(g in 1:N.session){
+          K2D[[g]]=matrix(1,J[g],K[g])
+        }
+      }
       K1D=vector("list",N.session)
       for(g in 1:N.session){
-        K1D[[g]]=rep(K[g],J[g])
+        K1D[[g]]=NA
       }
     }
     
@@ -71,8 +107,8 @@ sim.RT.multisession <-
     data=vector("list",N.session)
     for(g in 1:N.session){
       data[[g]]=sim.RT(N=N[g],theta.thin=theta.thin[g],
-                        lam0=lam0[g],sigma=sigma[g],K=K[g],X=X[[g]],buff=buff[g],
-                        obstype=obstype,theta.d=theta.d[g])
+                        lam0=lam0[g],p0=p0[g],lambda.d=lambda.d[g],sigma=sigma[g],K=K[g],X=X[[g]],buff=buff[g],
+                        obstype=obstype,theta.d=theta.d[g],K1D=K1D[[g]],K2D=K2D[[g]])
     }
     
     #combine session data
@@ -99,6 +135,6 @@ sim.RT.multisession <-
     out<-list(this.j=this.j,this.k=this.k,y.ID=y.ID, #observed data
               n.ID=n.ID,n.cap=n.cap,
               y.true.full=y.true.full,s=s,ID=ID,N=N,#true data
-              X=X,K=K,K1D=K1D,buff=buff,xlim=xlim,ylim=ylim)
+              X=X,K=K,K1D=K1D,K2D=K2D,buff=buff,xlim=xlim,ylim=ylim)
     return(out)
   }
