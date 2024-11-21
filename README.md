@@ -18,3 +18,9 @@ See testscripts.
 
 testscript RT Poisson.R = base RT model
 testscript catRT Poisson.R = categorical RT model
+
+11/21/24: I added a version of Poisson DA2 that uses the observation model likelihood that is marginalized over individuals. Further, I use results from Herliansyah et al. (2024) to speed up N/z and s updates.
+https://link.springer.com/article/10.1007/s13253-023-00598-3
+
+
+See testscript for Poisson DA2 Marginal

@@ -24,7 +24,7 @@ init.RT.multisession=function(data,inits=NA,M=NA,obstype="poisson"){
   for(g in 1:N.session){
     data.use=list(y.ID=data$y.ID[[g]],this.j=data$this.j[g,1:n.samples[g]],this.k=data$this.k[g,1:n.samples[g]],
                   n.ID=data$n.ID[g],X=data$X[[g]],buff=data$buff[g],
-                  K1D=data$K1D[[g]])
+                  K1D=data$K1D[[g]],K2D=data$K2D[[g]])
     init.session[[g]]=init.RT(data.use,inits.use[[g]],M=M[g],obstype=obstype)
   }
   J=unlist(lapply(data$X,nrow))
@@ -34,7 +34,10 @@ init.RT.multisession=function(data,inits=NA,M=NA,obstype="poisson"){
   ID=matrix(NA,N.session,max(n.samples))
   y.ID=array(NA,dim=c(N.session,maxM,max(J)))
   y.true=array(NA,dim=c(N.session,maxM,max(J)))
+  y.ID3D=array(NA,dim=c(N.session,maxM,max(J),max(K)))
+  y.true3D=array(NA,dim=c(N.session,maxM,max(J),max(K)))
   K1D=matrix(NA,N.session,max(J))
+  K2D=array(NA,dim=c(N.session,max(J),max(K)))
   
   for(g in 1:N.session){
     s[g,1:M[g],]=init.session[[g]]$s
@@ -42,7 +45,10 @@ init.RT.multisession=function(data,inits=NA,M=NA,obstype="poisson"){
     ID[g,1:n.samples[g]]=init.session[[g]]$ID
     y.ID[g,1:M[g],1:J[g]]=init.session[[g]]$y.ID
     y.true[g,1:M[g],1:J[g]]=init.session[[g]]$y.true
+    y.ID3D[g,1:M[g],1:J[g],1:K[g]]=init.session[[g]]$y.ID3D
+    y.true3D[g,1:M[g],1:J[g],1:K[g]]=init.session[[g]]$y.true3D
     K1D[g,1:J[g]]=init.session[[g]]$K1D
+    K2D[g,1:J[g],1:K[g]]=init.session[[g]]$K2D
   }
   
   #put X in ragged array
@@ -51,8 +57,9 @@ init.RT.multisession=function(data,inits=NA,M=NA,obstype="poisson"){
     X.new[g,1:J[g],]=data$X[[g]]
   }
   
-  return(list(s=s,z=z,ID=ID,y.ID=y.ID,y.true=y.true,K1D=K1D,J=J,X=X.new,
-              n.samples=n.samples,this.j=data$this.j,
+  return(list(s=s,z=z,ID=ID,y.ID=y.ID,y.true=y.true,y.ID3D=y.ID3D,y.true3D=y.true3D,
+              K1D=K1D,K2D=K2D,J=J,X=X.new,
+              n.samples=n.samples,this.j=data$this.j,this.k=data$this.k,
               xlim=data$xlim,ylim=data$ylim))
   
 }
