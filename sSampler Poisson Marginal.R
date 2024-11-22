@@ -4,7 +4,6 @@ sSampler <- nimbleFunction(
   setup = function(model, mvSaved, target, control) {
     i <- control$i
     J <- control$J
-    res <- control$res
     xlim <- control$xlim
     ylim <- control$ylim
     ## control list extraction
@@ -73,7 +72,7 @@ sSampler <- nimbleFunction(
         model$bigLam <<- bigLam.proposed
         model$calculate(lam.noID.nodes) #update lam.noID nodes after bigLam
         lp_proposed_y.ID <- model$calculate(y.ID.nodes) #get proposed y.ID logProb
-        lp_proposed_y.noID <- model$calculate(y.noID.nodes) #get proposed y2 logProb
+        lp_proposed_y.noID <- model$calculate(y.noID.nodes) #get proposed y.noID logProb
         lp_initial <- lp_initial_s + lp_initial_y.ID + lp_initial_y.noID
         lp_proposed <- lp_proposed_s + lp_proposed_y.ID + lp_proposed_y.noID
         log_MH_ratio <- lp_proposed - lp_initial

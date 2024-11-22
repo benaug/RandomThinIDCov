@@ -18,10 +18,12 @@ NimModel <- nimbleCode({
       s[g,i,1] ~ dunif(xlim[g,1],xlim[g,2])
       s[g,i,2] ~ dunif(ylim[g,1],ylim[g,2])
       lam[g,i,1:J[g]] <- GetDetectionRate(s = s[g,i,1:2], X = X[g,1:J[g],1:2], J=J[g],sigma=sigma[g], lam0=lam0[g], z=z[g,i])
-      y.true[g,i,1:J[g]] ~ dPoissonVector(lam[g,i,1:J[g]]*K1D[g,1:J[g]],z=z[g,i])  # Model for complete capture histories
-      y.ID[g,i,1:J[g]] ~ dBinomialVector(theta.thin[g], y.true[g,i,1:J[g]],capcounts=capcounts[g,i])  # Model for ID process
+      y.ID[g,i,1:J[g]] ~  dPoissonVector(lam[g,i,1:J[g]]*K1D[g,1:J[g]]*theta.thin[g],z=z[g,i]) #identified detections
     }
-    capcounts[g,1:M[g]] <- Getcapcounts(y.true=y.true[g,1:M[g],1:J[g]]) #intermediate object to derive n
-    n[g] <- Getncap(capcounts=capcounts[g,1:M[g]],ID=ID[g,1:n.samples[g]]) #number of captured individuals
+    for(j in 1:J[g]){
+      bigLam[g,j] <- sum(lam[g,1:M[g],j]*z[g,1:M[g]])
+      lam.noID[g,j] <- bigLam[g,j]*K1D[g,j]*(1-theta.thin[g])
+      y.noID[g,j] ~ dpois(lam.noID[g,j]) #unidentified detections
+    }
   }
 })# custom Metropolis-Hastings update for N/z

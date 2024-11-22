@@ -1,8 +1,8 @@
 NimModel <- nimbleCode({
   #detection function priors - shared across sessions
-  lam0.fixed~dunif(0,15)
-  sigma.fixed~dunif(0,10)
-  theta.d~dunif(0,25) #careful with this prior. Too much prior mass near 0 gives very strong prior weight to high overdispersion
+  lam0.fixed ~ dunif(0,15)
+  sigma.fixed ~ dunif(0,10)
+  theta.d ~ dunif(0,25) #careful with this prior. Too much prior mass near 0 gives very strong prior weight to high overdispersion
   #Expected density for marked + unmarked individuals
   D ~ dunif(0,10) #Expected density
   for(g in 1:N.session){
@@ -13,7 +13,7 @@ NimModel <- nimbleCode({
     lambda[g] <- D*area[g] #expected N
     N[g] ~ dpois(lambda[g]) #realized N
     #thinning prior, not shared across sessions here
-    theta.thin[g]~dunif(0,1)
+    theta.thin[g] ~ dunif(0,1)
     #likelihoods (except for s priors)
     for(i in 1:M[g]) {
       s[g,i,1] ~ dunif(xlim[g,1],xlim[g,2])
@@ -26,4 +26,4 @@ NimModel <- nimbleCode({
     capcounts[g,1:M[g]] <- Getcapcounts(y.true=y.true[g,1:M[g],1:J[g]]) #intermediate object to derive n
     n[g] <- Getncap(capcounts=capcounts[g,1:M[g]],ID=ID[g,1:n.samples[g]]) #number of captured individuals
   }
-})# end model
+})# custom Metropolis-Hastings update for N/z

@@ -1,7 +1,3 @@
-###################################################################
-# Custom nimbleFunctions
-###################################################################
-
 #------------------------------------------------------------------
 # Function for calculation detection rate
 #------------------------------------------------------------------
@@ -44,15 +40,17 @@ rPoissonVector <- nimbleFunction(
   }
 )
 
-
-#Required custom update for N/z
+#Required custom update for number of calls
 zSampler <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
-  inds.detected <- control$inds.detected
-    M <- control$M
+    g <- control$g
     J <- control$J
+    M <- control$M
+    inds.detected <- control$inds.detected
     z.ups <- control$z.ups
+    xlim <- control$xlim
+    ylim <- control$ylim
     y.ID.nodes <- control$y.ID.nodes
     y.noID.nodes <- control$y.noID.nodes
     lam.nodes <- control$lam.nodes
@@ -63,19 +61,19 @@ zSampler <- nimbleFunction(
   },
   run = function() {
     #track these "manually" so computations faster than nimble will do them
-    bigLam.initial <- model$bigLam
+    bigLam.initial <- model$bigLam[g,1:J]
     for(up in 1:z.ups){ #how many updates per iteration?
       #propose to add/subtract 1
       updown <- rbinom(1,1,0.5) #p=0.5 is symmetric. If you change this, must account for asymmetric proposal
       reject <- FALSE #we auto reject if you select a detected call
       if(updown==0){#subtract
         # find all z's currently on
-        z.on <- which(model$z==1)
+        z.on <- which(model$z[g,1:M]==1)
         n.z.on <- length(z.on)
         pick <- rcat(1,rep(1/n.z.on,n.z.on)) #select one of these individuals
         pick <- z.on[pick]
-        #prereject turning off individuals currently allocated samples
-        if(any(pick==inds.detected)){ #is this individual detected?
+        #prereject turning off all individuals
+        if(model$N[g]==1){ #is this the last individual?
           reject <- TRUE
         }
         if(!reject){
@@ -83,48 +81,52 @@ zSampler <- nimbleFunction(
           lp.initial.N <- model$getLogProb(N.node)
           lp.initial.y.ID <- model$getLogProb(y.ID.nodes[pick])
           lp.initial.y.noID <- model$getLogProb(y.noID.nodes)
-
+          
           #propose new N/z
-          model$N[1] <<-  model$N[1] - 1
-          model$z[pick] <<- 0
-
+          model$N[g] <<-  model$N[g] - 1
+          model$z[g,pick] <<- 0
+          
           #turn off
-          bigLam.proposed <- bigLam.initial - model$lam[pick,] #subtract these out before calculate
+          bigLam.proposed <- bigLam.initial - model$lam[g,pick,1:J] #subtract these out before calculate
           model$calculate(lam.nodes[pick])
-          model$bigLam <<- bigLam.proposed
+          model$bigLam[g,1:J] <<- bigLam.proposed
           model$calculate(lam.noID.nodes)
-
+          
           #get proposed logprobs for N and y
           lp.proposed.N <- model$calculate(N.node)
           lp.proposed.y.ID <- model$calculate(y.ID.nodes[pick]) #will always be 0
           lp.proposed.y.noID <- model$calculate(y.noID.nodes)
-
+          
           #MH step
           log_MH_ratio <- (lp.proposed.N + lp.proposed.y.ID + lp.proposed.y.noID) -
             (lp.initial.N + lp.initial.y.ID + lp.initial.y.noID)
           accept <- decide(log_MH_ratio)
-
+          
           if(accept) {
-            mvSaved["N",1][1] <<- model[["N"]]
-            mvSaved["z",1][pick] <<- model[["z"]][pick]
-            mvSaved["lam",1][pick,] <<- model[["lam"]][pick,]
-            mvSaved["bigLam",1][1:J] <<- model[["bigLam"]][1:J]
-            mvSaved["lam.noID",1][1:J] <<- model[["lam.noID"]][1:J]
+            mvSaved["N",1][g] <<- model[["N"]][g]
+            mvSaved["z",1][g,pick] <<- model[["z"]][g,pick]
+            for(j in 1:J){
+              mvSaved["lam",1][g,pick,j] <<- model[["lam"]][g,pick,j]
+              mvSaved["bigLam",1][g,j] <<- model[["bigLam"]][g,j]
+              mvSaved["lam.noID",1][g,j] <<- model[["lam.noID"]][g,j]
+            }
             bigLam.initial <- bigLam.proposed
           }else{
-            model[["N"]] <<- mvSaved["N",1][1]
-            model[["z"]][pick] <<- mvSaved["z",1][pick]
-            model[["lam"]][pick,] <<- mvSaved["lam",1][pick,]
-            model[["bigLam"]][1:J] <<- mvSaved["bigLam",1][1:J]
-            model[["lam.noID"]][1:J] <<- mvSaved["lam.noID",1][1:J]
+            model[["N"]][g] <<- mvSaved["N",1][g]
+            model[["z"]][g,pick] <<- mvSaved["z",1][g,pick]
+            for(j in 1:J){
+              model[["lam"]][g,pick,j] <<- mvSaved["lam",1][g,pick,j]
+              model[["bigLam"]][g,j] <<- mvSaved["bigLam",1][g,j]
+              model[["lam.noID"]][g,j] <<- mvSaved["lam.noID",1][g,j]
+            }
             model$calculate(y.ID.nodes[pick])
             model$calculate(y.noID.nodes)
             model$calculate(N.node)
           }
         }
       }else{#add
-        if(model$N[1] < M){ #cannot update if z maxed out. Need to raise M
-          z.off <- which(model$z==0)
+        if(model$N[g] < M){ #cannot update if z maxed out. Need to raise M
+          z.off <- which(model$z[g,1:M]==0)
           n.z.off <- length(z.off)
           pick <- rcat(1,rep(1/n.z.off,n.z.off)) #select one of these individuals
           pick <- z.off[pick]
@@ -132,39 +134,43 @@ zSampler <- nimbleFunction(
           lp.initial.N <- model$getLogProb(N.node)
           lp.initial.y.ID <- model$getLogProb(y.ID.nodes[pick]) #will always be 0
           lp.initial.y.noID <- model$getLogProb(y.noID.nodes) #will always be 0
-
+          
           #propose new N/z
-          model$N[1] <<-  model$N[1] + 1
-          model$z[pick] <<- 1
-
+          model$N[g] <<-  model$N[g] + 1
+          model$z[g,pick] <<- 1
+          
           #turn on
           model$calculate(lam.nodes[pick])
-          bigLam.proposed <- bigLam.initial + model$lam[pick,] #add these after calculate
-          model$bigLam <<- bigLam.proposed
+          bigLam.proposed <- bigLam.initial + model$lam[g,pick,1:J] #add these after calculate
+          model$bigLam[g,1:J] <<- bigLam.proposed
           model$calculate(lam.noID.nodes)
-
+          
           #get proposed logprobs for N and y
           lp.proposed.N <- model$calculate(N.node)
           lp.proposed.y.ID <- model$calculate(y.ID.nodes[pick])
           lp.proposed.y.noID <- model$calculate(y.noID.nodes)
-
+          
           #MH step
           log_MH_ratio <- (lp.proposed.N + lp.proposed.y.ID + lp.proposed.y.noID) -
             (lp.initial.N + lp.initial.y.ID + lp.initial.y.noID)
           accept <- decide(log_MH_ratio)
           if(accept) {
-            mvSaved["N",1][1] <<- model[["N"]]
-            mvSaved["z",1][pick] <<- model[["z"]][pick]
-            mvSaved["lam",1][pick,] <<- model[["lam"]][pick,]
-            mvSaved["bigLam",1][1:J] <<- model[["bigLam"]][1:J]
-            mvSaved["lam.noID",1][1:J] <<- model[["lam.noID"]][1:J]
+            mvSaved["N",1][g] <<- model[["N"]][g]
+            mvSaved["z",1][g,pick] <<- model[["z"]][g,pick]
+            for(j in 1:J){
+              mvSaved["lam",1][g,pick,j] <<- model[["lam"]][g,pick,j]
+              mvSaved["bigLam",1][g,j] <<- model[["bigLam"]][g,j]
+              mvSaved["lam.noID",1][g,j] <<- model[["lam.noID"]][g,j]
+            }
             bigLam.initial <- bigLam.proposed
           }else{
-            model[["N"]] <<- mvSaved["N",1][1]
-            model[["z"]][pick] <<- mvSaved["z",1][pick]
-            model[["lam"]][pick,] <<- mvSaved["lam",1][pick,]
-            model[["bigLam"]][1:J] <<- mvSaved["bigLam",1][1:J]
-            model[["lam.noID"]][1:J] <<- mvSaved["lam.noID",1][1:J]
+            model[["N"]][g] <<- mvSaved["N",1][g]
+            model[["z"]][g,pick] <<- mvSaved["z",1][g,pick]
+            for(j in 1:J){
+              model[["lam"]][g,pick,j] <<- mvSaved["lam",1][g,pick,j]
+              model[["bigLam"]][g,j] <<- mvSaved["bigLam",1][g,j]
+              model[["lam.noID"]][g,j] <<- mvSaved["lam.noID",1][g,j]
+            }
             model$calculate(y.ID.nodes[pick])
             model$calculate(y.noID.nodes)
             model$calculate(N.node)

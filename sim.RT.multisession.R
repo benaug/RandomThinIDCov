@@ -134,7 +134,7 @@ sim.RT.multisession <-
     
     out<-list(this.j=this.j,this.k=this.k,y.ID=y.ID, #observed data
               n.ID=n.ID,n.cap=n.cap,
-              y.true.full=y.true.full,s=s,ID=ID,N=N,#true data
+              y.true.full=y.true.full,s=s,ID=ID,N=N,lambda=lambda,#true data
               X=X,K=K,K1D=K1D,K2D=K2D,buff=buff,xlim=xlim,ylim=ylim)
     return(out)
   }
