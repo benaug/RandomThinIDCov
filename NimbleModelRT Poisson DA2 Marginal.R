@@ -18,4 +18,4 @@ NimModel <- nimbleCode({
     lam.noID[j] <- bigLam[j]*K1D[j]*(1-theta.thin)
     y.noID[j] ~ dpois(lam.noID[j]) #unidentified detections, independent from identified with Poisson obsmod
   }
-})# end model
+})# custom Metropolis-Hastings update for N/z
