@@ -1,7 +1,7 @@
 #this version uses an alternative data augmentation approach that runs faster and allows a poisson
 #prior on N. Also uses observation model marginalized over individuals with results from Herliansyah et al.
 #(2024) https://link.springer.com/article/10.1007/s13253-023-00598-3
-#Marginal only possible with Poisson detections
+#Marginal only possible with Poisson detections (among count models)
 
 library(nimble)
 library(coda)
@@ -35,9 +35,7 @@ str(data$y.ID) #the observed ID detections
 head(data$this.j) #the trap of detection for all unidentified detections
 head(data$this.k) #occasion of capture, but not used in this 2D data sampler
 
-
 ##Fit model in Nimble##
-
 #data augmentation level
 M <- 175
 
@@ -84,8 +82,8 @@ z.ups <- round(M*0.25) # how many N/z proposals per iteration? Not sure what is 
 y.ID.nodes <- Rmodel$expandNodeNames(paste("y.ID[1:",M,",1:",J,"]"))
 y.noID.nodes <- Rmodel$expandNodeNames(paste("y.noID[1:",J,"]"))
 lam.nodes <- Rmodel$expandNodeNames(paste("lam[1:",M,",1:",J,"]"))
-bigLam.nodes <- Rmodel$getDependencies("bigLam") #only need this in calcNodes
-lam.noID.nodes <- Rmodel$getDependencies("lam.noID")
+bigLam.nodes <- Rmodel$expandNodeNames("bigLam") #only need this in calcNodes
+lam.noID.nodes <- Rmodel$expandNodeNames("lam.noID")
 N.node <- Rmodel$expandNodeNames(paste("N"))
 z.nodes <- Rmodel$expandNodeNames(paste("z[1:",M,"]"))
 calcNodes <- c(N.node,lam.nodes,bigLam.nodes,lam.noID.nodes,y.noID.nodes,y.ID.nodes)
