@@ -2,9 +2,9 @@ sSampler <- nimbleFunction(
   # name = 'sampler_RW',
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
-    i<-control$i    
-    xlim<-control$xlim
-    ylim<-control$ylim
+    i <- control$i    
+    xlim <- control$xlim
+    ylim <- control$ylim
     ## control list extraction
     # logScale            <- extractControlElement(control, 'log',                 FALSE)
     # reflective          <- extractControlElement(control, 'reflective',          FALSE)
@@ -40,7 +40,7 @@ sSampler <- nimbleFunction(
   },
   run = function() {
     z <- model$z[i]
-    if(z==0){#propose from unifrom prior
+    if(z==0){#propose from uniform prior
       model$s[i, 1:2] <<- c(runif(1, xlim[1], xlim[2]), runif(1, ylim[1], ylim[2]))
       model$calculate(calcNodes)
       copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)

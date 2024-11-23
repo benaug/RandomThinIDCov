@@ -2,10 +2,10 @@ NimModel <- nimbleCode({
   #detection function priors as function of first ID cov
   #shared across sessions here
   for(df in 1:n.levels[1,1]){
-    lam0.fixed[df]~dunif(0,15)
-    sigma.fixed[df]~dunif(0,10)
+    lam0.fixed[df] ~ dunif(0,15)
+    sigma.fixed[df] ~ dunif(0,10)
   }
-  theta.d~dunif(0,25) #careful with this prior. Too much prior mass near 0 gives very strong prior weight to high overdispersion
+  theta.d ~ dunif(0,25) #careful with this prior. Too much prior mass near 0 gives very strong prior weight to high overdispersion
   #Expected density for marked + unmarked individuals
   D ~ dunif(0,10) #Expected density
   for(g in 1:N.session){
@@ -17,19 +17,19 @@ NimModel <- nimbleCode({
     N[g] ~ dpois(lambda[g]) #realized N
     #thinning priors
     for(i in 1:n.levels[g,2]){ #make sure this is correct ID cov
-      theta.thin[g,i]~dunif(0,1)
+      theta.thin[g,i] ~ dunif(0,1)
     }
     #categorical ID covariate priors
     for(m in 1:n.cat[g]){ #skip first cat for marked/unmarked
       for(l in 1:n.levels[g,m]){
         alpha[g,m,l] <- 1 # prior parameters
       }
-      gammaMat[g,m,1:n.levels[g,m]]~ddirch(alpha[g,m,1:n.levels[g,m]])
+      gammaMat[g,m,1:n.levels[g,m]] ~ ddirch(alpha[g,m,1:n.levels[g,m]])
     }
     #likelihoods (except for s priors)
     for(i in 1:M[g]) {
       for(m in 1:n.cat[g]){
-        G.true[g,i,m]~dcat(gammaMat[g,m,1:n.levels[g,m]])
+        G.true[g,i,m] ~ dcat(gammaMat[g,m,1:n.levels[g,m]])
       }
       s[g,i,1] ~ dunif(xlim[g,1],xlim[g,2])
       s[g,i,2] ~ dunif(ylim[g,1],ylim[g,2])

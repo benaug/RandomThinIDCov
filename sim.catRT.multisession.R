@@ -1,16 +1,16 @@
-e2dist<- function (x, y){
+e2dist <- function (x, y){
   i <- sort(rep(1:nrow(y), nrow(x)))
   dvec <- sqrt((x[, 1] - y[i, 1])^2 + (x[, 2] - y[i, 2])^2)
   matrix(dvec, nrow = nrow(x), ncol = nrow(y), byrow = F)
 }
 
 getArea <- function(X=X,buff=buff){
-  N.session=length(X)
-  area=rep(NA,N.session)
+  N.session <- length(X)
+  area <- rep(NA,N.session)
   for(a in 1:N.session){
-    xlim=c(min(X[[a]][,1]),max(X[[a]][,1]))+c(-buff[[a]],buff[[a]])
-    ylim=c(min(X[[a]][,2]),max(X[[a]][,2]))+c(-buff[[a]],buff[[a]])
-    area[a]=diff(xlim)*diff(ylim)
+    xlim <- c(min(X[[a]][,1]),max(X[[a]][,1]))+c(-buff[[a]],buff[[a]])
+    ylim <- c(min(X[[a]][,2]),max(X[[a]][,2]))+c(-buff[[a]],buff[[a]])
+    area[a] <- diff(xlim)*diff(ylim)
   }
   return(area)
 }
@@ -32,24 +32,24 @@ sim.catRT.multisession <-
     if(obstype=="negbin"){
       if(length(theta.d)!=N.session)stop("theta.d must be of length N.session")
     }else{
-      theta.d=rep(theta.d,N.session)
+      theta.d <- rep(theta.d,N.session)
     }
     
     #realized N
-    N=rpois(N.session,lambda)
+    N <- rpois(N.session,lambda)
     
     library(abind)
-    xlim=ylim=matrix(NA,N.session,2)
-    s=D=vector("list",N.session)
-    J=rep(NA,N.session)
+    xlim <- ylim <- matrix(NA,N.session,2)
+    s <- D <- vector("list",N.session)
+    J <- rep(NA,N.session)
     
     for(g in 1:N.session){
-      X[[g]]=as.matrix(X[[g]])
-      xlim[g,]=c(min(X[[g]][,1]),max(X[[g]][,1]))+c(-buff[g],buff[g])
-      ylim[g,]=c(min(X[[g]][,2]),max(X[[g]][,2]))+c(-buff[g],buff[g])
-      s[[g]]<- cbind(runif(N[g], xlim[g,1],xlim[g,2]), runif(N[g],ylim[g,1],ylim[g,2]))
-      D[[g]]<- e2dist(s[[g]],X[[g]])
-      J[g]=nrow(X[[g]])
+      X[[g]] <- as.matrix(X[[g]])
+      xlim[g,] <- c(min(X[[g]][,1]),max(X[[g]][,1]))+c(-buff[g],buff[g])
+      ylim[g,] <- c(min(X[[g]][,2]),max(X[[g]][,2]))+c(-buff[g],buff[g])
+      s[[g]] <- cbind(runif(N[g], xlim[g,1],xlim[g,2]), runif(N[g],ylim[g,1],ylim[g,2]))
+      D[[g]] <- e2dist(s[[g]],X[[g]])
+      J[g] <- nrow(X[[g]])
     }
     
     #trap operation
@@ -65,54 +65,54 @@ sim.catRT.multisession <-
         }
       }
     }else{
-      K1D=vector("list",N.session)
+      K1D <- vector("list",N.session)
       for(g in 1:N.session){
-        K1D[[g]]=rep(K[g],J[g])
+        K1D[[g]] <- rep(K[g],J[g])
       }
     }
     
     #simulate sessions one at a time
-    data=vector("list",N.session)
+    data <- vector("list",N.session)
     for(g in 1:N.session){
-      data[[g]]=sim.catRT(N=N[g],theta.thin=theta.thin[g,],
+      data[[g]] <- sim.catRT(N=N[g],theta.thin=theta.thin[g,],
                         lam0=lam0[g,],sigma=sigma[g,],K=K[g],X=X[[g]],buff=buff[g],
                         obstype=obstype,theta.d=theta.d[g],
                         n.cat=n.cat,IDcovs=IDcovs,gamma=gamma,theta.cat=theta.cat,G.thin=G.thin)
     }
     
     #combine session data
-    n.samples=rep(NA,N.session)
+    n.samples <- rep(NA,N.session)
     for(g in 1:N.session){
-      n.samples[g]=length(data[[g]]$this.j)
+      n.samples[g] <- length(data[[g]]$this.j)
     }
-    n.samples.max=max(n.samples)
-    this.j=this.k=ID=matrix(NA,N.session,n.samples.max)
-    y.true=y.ID=y.true.full=s=vector("list",N.session)
-    n.cap=n.ID=rep(NA,N.session)
+    n.samples.max <- max(n.samples)
+    this.j <- this.k <- ID <- matrix(NA,N.session,n.samples.max)
+    y.true <- y.ID <- y.true.full <- s <- vector("list",N.session)
+    n.cap <- n.ID <- rep(NA,N.session)
     for(g in 1:N.session){
-      this.j[g,1:n.samples[g]]=data[[g]]$this.j
-      this.k[g,1:n.samples[g]]=data[[g]]$this.k
-      ID[g,1:n.samples[g]]=data[[g]]$ID
-      n.cap[g]=data[[g]]$n.cap
-      n.ID[g]=data[[g]]$n.ID
-      y.true[[g]]=data[[g]]$y.true
-      y.true.full[[g]]=data[[g]]$y.true.full
-      y.ID[[g]]=data[[g]]$y.ID
-      s[[g]]=data[[g]]$s
+      this.j[g,1:n.samples[g]] <- data[[g]]$this.j
+      this.k[g,1:n.samples[g]] <- data[[g]]$this.k
+      ID[g,1:n.samples[g]] <- data[[g]]$ID
+      n.cap[g] <- data[[g]]$n.cap
+      n.ID[g] <- data[[g]]$n.ID
+      y.true[[g]] <- data[[g]]$y.true
+      y.true.full[[g]] <- data[[g]]$y.true.full
+      y.ID[[g]] <- data[[g]]$y.ID
+      s[[g]] <- data[[g]]$s
     }
     
     #pull out ID cov stuff
-    n.ID.max=max(n.ID)
-    G.ID=array(NA,dim=c(N.session,n.ID.max,n.cat))
-    G.noID=array(NA,dim=c(N.session,n.samples.max,n.cat))
-    IDlist=vector("list",N.session)
+    n.ID.max <- max(n.ID)
+    G.ID <- array(NA,dim=c(N.session,n.ID.max,n.cat))
+    G.noID <- array(NA,dim=c(N.session,n.samples.max,n.cat))
+    IDlist <- vector("list",N.session)
     for(g in 1:N.session){
-      G.ID[g,1:n.ID[g],]=data[[g]]$G.ID
-      G.noID[g,1:n.samples[g],]=data[[g]]$G.noID
-      IDlist[[g]]=data[[g]]$IDlist
+      G.ID[g,1:n.ID[g],] <- data[[g]]$G.ID
+      G.noID[g,1:n.samples[g],] <- data[[g]]$G.noID
+      IDlist[[g]] <- data[[g]]$IDlist
     }
     
-    out<-list(this.j=this.j,this.k=this.k,y.ID=y.ID, #observed data
+    out <- list(this.j=this.j,this.k=this.k,y.ID=y.ID, #observed data
               G.ID=G.ID,G.noID=G.noID, #observed data
               n.ID=n.ID,n.cap=n.cap,IDlist=IDlist,
               y.true.full=y.true.full,s=s,ID=ID,N=N,#true data

@@ -1,12 +1,12 @@
 NimModel <- nimbleCode({
   #detection function priors
-  lam0~dunif(0,20)
-  sigma~dunif(0,20)
-  theta.d~dunif(0,25) #careful with this prior. Too much prior mass near 0 gives very strong prior weight to high overdispersion
+  lam0 ~ dunif(0,20)
+  sigma ~ dunif(0,20)
+  theta.d ~ dunif(0,25) #careful with this prior. Too much prior mass near 0 gives very strong prior weight to high overdispersion
   #data augmentation prior
-  psi~dunif(0,1)
+  psi ~ dunif(0,1)
   #thinning prior
-  theta.thin~dunif(0,1)
+  theta.thin ~ dunif(0,1)
 
   #likelihoods (except for s priors)
   for(i in 1:M) {

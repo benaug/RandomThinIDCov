@@ -34,8 +34,8 @@ dPoissonVector <- nimbleFunction(
 rPoissonVector <- nimbleFunction(
   run = function(n = integer(0),lambda = double(1), z = double(0)) {
     returnType(double(1))
-    J=nimDim(lambda)[1]
-    out=numeric(J,value=0)
+    J <- nimDim(lambda)[1]
+    out <- numeric(J,value=0)
     return(out)
   }
 )
@@ -47,11 +47,11 @@ dBinomialVector <- nimbleFunction(
     if(capcounts==0){
         return(0)
     }else{
-      J=nimDim(size)[1]
+      J <- nimDim(size)[1]
       logProb <- 0
       for(j in 1:J){
         if(size[j]>0){
-          logProb = logProb + dbinom(x[j], prob=prob, size=size[j], log = TRUE)
+          logProb <- logProb + dbinom(x[j], prob=prob, size=size[j], log = TRUE)
         }
       }
       return(logProb)
@@ -62,8 +62,8 @@ dBinomialVector <- nimbleFunction(
 rBinomialVector <- nimbleFunction(
   run = function(n = integer(0),prob = double(0), size=double(1), capcounts = double(0)) {
     returnType(double(1))
-    J=nimDim(size)[1]
-    out=numeric(J,value=0)
+    J <- nimDim(size)[1]
+    out <- numeric(J,value=0)
     return(out)
   }
 )
@@ -73,9 +73,9 @@ Getcapcounts <- nimbleFunction(
     returnType(double(1))
     M <- nimDim(y.true)[1]
     J <- nimDim(y.true)[2]
-    capcounts=numeric(M, value = 0)
+    capcounts <- numeric(M, value = 0)
     for(i in 1:M){
-      capcounts[i]=sum(y.true[i,1:J])
+      capcounts[i] <- sum(y.true[i,1:J])
     }
     return(capcounts)
   }
@@ -101,7 +101,7 @@ Getncap <- nimbleFunction(
 IDSampler <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
-    M<-control$M
+    M <- control$M
     J <- control$J
     K1D <- control$K1D
     n.samples <- control$n.samples
@@ -116,10 +116,10 @@ IDSampler <- nimbleFunction(
     lam <- model$lam[g,1:M,1:J]
     
     #precalculate match. Does sample l match individual i?
-    match=matrix(TRUE,nrow=n.samples,ncol=M) #start with all TRUE
+    match <- matrix(TRUE,nrow=n.samples,ncol=M) #start with all TRUE
     for(i in 1:M){#can match any individual
       if(z[i]==0){#unless z is off
-        match[1:n.samples,i]=FALSE
+        match[1:n.samples,i] <- FALSE
       }
     }
     
@@ -129,7 +129,7 @@ IDSampler <- nimbleFunction(
     for(i in 1:M){
       if(z[i]==1){
         for(j in 1:J){
-          ll.y[i,j] <-  dpois(y.true[i,j],K1D[j]*lam[i,j],log=TRUE)
+          ll.y[i,j] <- dpois(y.true[i,j],K1D[j]*lam[i,j],log=TRUE)
         }
       }
     }
@@ -149,35 +149,35 @@ IDSampler <- nimbleFunction(
 
     ###update IDs
     for(l in 1:n.samples){#for all samples without known IDs
-      ID.cand=ID.curr
-      y.true.cand=y.true
-      propprobs=lam[1:M,this.j[l]]
+      ID.cand <- ID.curr
+      y.true.cand <- y.true
+      propprobs <- lam[1:M,this.j[l]]
       for(i in 1:M){ #zero out nonmatches and z=0
         if(!match[l,i]){
-          propprobs[i]=0
+          propprobs[i] <- 0
         }
       }
-      denom=sum(propprobs) #abort if propprobs sum to 0. No matches anywhere nearby.
+      denom <- sum(propprobs) #abort if propprobs sum to 0. No matches anywhere nearby.
       if(denom>0){
-        propprobs=propprobs/denom
-        ID.cand[l]=rcat(1,prob=propprobs)
+        propprobs <- propprobs/denom
+        ID.cand[l] <- rcat(1,prob=propprobs)
         if(ID.cand[l]!=ID.curr[l]){
-          swapped=c(ID.curr[l],ID.cand[l])
+          swapped <- c(ID.curr[l],ID.cand[l])
           #new sample proposal probabilities
-          forprob=propprobs[swapped[2]]
-          backprob=propprobs[swapped[1]]
+          forprob <- propprobs[swapped[2]]
+          backprob <- propprobs[swapped[1]]
           #new y.true's - move sample from ID to ID.cand
-          y.true.cand[ID.curr[l],this.j[l]]=y.true[ID.curr[l],this.j[l]]-1
-          y.true.cand[ID.cand[l],this.j[l]]=y.true[ID.cand[l],this.j[l]]+1
-          ll.y.cand[swapped,this.j[l]]=dpois(y.true.cand[swapped,this.j[l]],lam[swapped,this.j[l]]*K1D[this.j[l]],log=TRUE)
+          y.true.cand[ID.curr[l],this.j[l]] <- y.true[ID.curr[l],this.j[l]]-1
+          y.true.cand[ID.cand[l],this.j[l]] <- y.true[ID.cand[l],this.j[l]]+1
+          ll.y.cand[swapped,this.j[l]] <- dpois(y.true.cand[swapped,this.j[l]],lam[swapped,this.j[l]]*K1D[this.j[l]],log=TRUE)
           ll.y.ID.cand[swapped,this.j[l]] <- dbinom(y.ID[swapped,this.j[l]],y.true.cand[swapped,this.j[l]],model$theta.thin[g],log=TRUE)
           
           #select sample to move proposal probabilities
           #P(select a sample of this type (not ID'd) for this ID)*P(select this j|sample of this type and this ID)
           #n.samples cancels out in MH ratio. Including for clarity
-          focalprob=(sum(ID.curr==swapped[1])/n.samples)*
+          focalprob <- (sum(ID.curr==swapped[1])/n.samples)*
             (y.true[swapped[1],this.j[l]] - y.ID[swapped[1],this.j[l]])/sum(y.true[swapped[1],1:J] - y.ID[swapped[1],1:J])
-          focalbackprob=(sum(ID.cand==swapped[2])/n.samples)*
+          focalbackprob <- (sum(ID.cand==swapped[2])/n.samples)*
             (y.true.cand[swapped[2],this.j[l]]- y.ID[swapped[2],this.j[l]])/sum(y.true.cand[swapped[2],1:J] - y.ID[swapped[2],1:J])
 
           #sum log likelihoods and do MH step
@@ -186,13 +186,13 @@ IDSampler <- nimbleFunction(
           log_MH_ratio <- (lp_proposed+log(backprob)+log(focalbackprob)) - (lp_initial+log(forprob)+log(focalprob))
           accept <- decide(log_MH_ratio)
           if(accept){
-            y.true[swapped[1],this.j[l]]=y.true.cand[swapped[1],this.j[l]]
-            y.true[swapped[2],this.j[l]]=y.true.cand[swapped[2],this.j[l]]
-            ll.y[swapped[1],this.j[l]]=ll.y.cand[swapped[1],this.j[l]]
-            ll.y[swapped[2],this.j[l]]=ll.y.cand[swapped[2],this.j[l]]
-            ll.y.ID[swapped[1],this.j[l]]=ll.y.ID.cand[swapped[1],this.j[l]]
-            ll.y.ID[swapped[2],this.j[l]]=ll.y.ID.cand[swapped[2],this.j[l]]
-            ID.curr[l]=ID.cand[l]
+            y.true[swapped[1],this.j[l]] <- y.true.cand[swapped[1],this.j[l]]
+            y.true[swapped[2],this.j[l]] <- y.true.cand[swapped[2],this.j[l]]
+            ll.y[swapped[1],this.j[l]] <- ll.y.cand[swapped[1],this.j[l]]
+            ll.y[swapped[2],this.j[l]] <- ll.y.cand[swapped[2],this.j[l]]
+            ll.y.ID[swapped[1],this.j[l]] <- ll.y.ID.cand[swapped[1],this.j[l]]
+            ll.y.ID[swapped[2],this.j[l]] <- ll.y.ID.cand[swapped[2],this.j[l]]
+            ID.curr[l] <- ID.cand[l]
           }
         }
       }
@@ -227,16 +227,16 @@ zSampler <- nimbleFunction(
   run = function() {
     for(up in 1:z.ups){ #how many updates per iteration?
       #propose to add/subtract 1
-      updown=rbinom(1,1,0.5) #p=0.5 is symmetric. If you change this, must account for asymmetric proposal
-      reject=FALSE #we auto reject if you select a detected call
+      updown <- rbinom(1,1,0.5) #p=0.5 is symmetric. If you change this, must account for asymmetric proposal
+      reject <- FALSE #we auto reject if you select a detected call
       if(updown==0){#subtract
         #find all z's currently on
-        z.on=which(model$z[g,1:M]==1)
-        n.z.on=length(z.on)
-        pick=rcat(1,rep(1/n.z.on,n.z.on)) #select one of these individuals
-        pick=z.on[pick]
+        z.on <- which(model$z[g,1:M]==1)
+        n.z.on <- length(z.on)
+        pick <- rcat(1,rep(1/n.z.on,n.z.on)) #select one of these individuals
+        pick <- z.on[pick]
         if(any(pick==inds.detected)){ #is this individual detected?
-          reject=TRUE #if so, we reject (could never select these inds, but then need to account for asymmetric proposal)
+          reject <- TRUE #if so, we reject (could never select these inds, but then need to account for asymmetric proposal)
         }
         if(!reject){
           #get initial logprobs for N and y
@@ -276,10 +276,10 @@ zSampler <- nimbleFunction(
         }
       }else{#add
         if(model$N[g] < M){ #cannot update if z maxed out. Need to raise M
-          z.off=which(model$z[g,1:M]==0)
-          n.z.off=length(z.off)
-          pick=rcat(1,rep(1/n.z.off,n.z.off)) #select one of these individuals
-          pick=z.off[pick]
+          z.off <- which(model$z[g,1:M]==0)
+          n.z.off <- length(z.off)
+          pick <- rcat(1,rep(1/n.z.off,n.z.off)) #select one of these individuals
+          pick <- z.off[pick]
           
           #get initial logprobs for N and y
           lp.initial.N <- model$getLogProb(N.node)

@@ -1,27 +1,27 @@
 NimModel <- nimbleCode({
   #detection function priors
   for(i in 1:n.levels[1]){ #make sure this is correct ID cov
-    lam0[i]~dunif(0,2)
-    sigma[i]~dunif(0,2)
+    lam0[i] ~ dunif(0,2)
+    sigma[i] ~ dunif(0,2)
   }
-  theta.d~dunif(0,25) #careful with this prior. Too much prior mass near 0 gives very strong prior weight to high overdispersion
+  theta.d ~ dunif(0,25) #careful with this prior. Too much prior mass near 0 gives very strong prior weight to high overdispersion
   #data augmentation prior
-  psi~dunif(0,1)
+  psi ~ dunif(0,1)
   #thinning priors
   for(i in 1:n.levels[2]){ #make sure this is correct ID cov
-    theta.thin[i]~dunif(0,1)
+    theta.thin[i] ~ dunif(0,1)
   }
   #categorical ID covariate priors
   for(m in 1:n.cat){
     alpha[m,1:n.levels[m]] <- 1 # prior parameters
-    gammaMat[m,1:n.levels[m]]~ddirch(alpha[m,1:n.levels[m]])
+    gammaMat[m,1:n.levels[m]] ~ ddirch(alpha[m,1:n.levels[m]])
   }
   
   #likelihoods (except for s priors)
   for(i in 1:M) {
     z[i] ~ dbern(psi)
     for(m in 1:n.cat){
-      G.true[i,m]~dcat(gammaMat[m,1:n.levels[m]])
+      G.true[i,m] ~ dcat(gammaMat[m,1:n.levels[m]])
     }
     s[i,1] ~ dunif(xlim[1],xlim[2])
     s[i,2] ~ dunif(ylim[1],ylim[2])

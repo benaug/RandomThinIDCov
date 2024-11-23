@@ -133,7 +133,7 @@ data$n.cap #true number of captured individuals
 #look at ID posteriors. Not removing any burnin here...
 mvSamples2 <- as.matrix(Cmcmc$mvSamples2)
 
-check.sample=1
+check.sample <- 1
 #posterior prob this sample belongs to each individual number
 round(table(mvSamples2[,check.sample])/(nrow(mvSamples2)-1),2)
 #truth (for simulated data sets)
