@@ -84,8 +84,8 @@ zSampler <- nimbleFunction(
         n.z.on <- length(z.on)
         pick <- rcat(1,rep(1/n.z.on,n.z.on)) #select one of these individuals
         pick <- z.on[pick]
-        #prereject turning off all individuals
-        if(model$N[g]==1){ #is this the last individual?
+        #prereject turning off detected individuals
+        if(any(pick==inds.detected)){ #is this individual detected?
           reject <- TRUE
         }
         if(!reject){

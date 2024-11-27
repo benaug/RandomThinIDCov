@@ -118,8 +118,9 @@ for(g in 1:N.session){
   N.node <- Rmodel$expandNodeNames(paste("N[",g,"]"))
   z.nodes <- Rmodel$expandNodeNames(paste("z[",g,",","1:",M[g],"]"))
   calcNodes <- c(N.node,lam.nodes,bigLam.nodes,lam.noID.nodes,y.ID.nodes,y.noID.nodes)
+  inds.detected <- which(rowSums(nimbuild$y.ID[g,,],na.rm=TRUE)>0)
   conf$addSampler(target = c("N"),
-                  type = 'zSampler',control = list(z.ups=z.ups[g],J=J[g],M=M[g],
+                  type = 'zSampler',control = list(z.ups=z.ups[g],J=J[g],M=M[g],inds.detected=inds.detected,
                                                    xlim=nimbuild$xlim[g,],ylim=nimbuild$ylim[g,],g=g,
                                                    y.ID.nodes=y.ID.nodes,y.noID.nodes=y.noID.nodes,
                                                    lam.nodes=lam.nodes,lam.noID.nodes=lam.noID.nodes,

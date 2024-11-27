@@ -57,7 +57,7 @@ rPoissonVector <- nimbleFunction(
 zSampler <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {
-  inds.detected <- control$inds.detected
+    inds.detected <- control$inds.detected
     M <- control$M
     J <- control$J
     z.ups <- control$z.ups
@@ -82,7 +82,7 @@ zSampler <- nimbleFunction(
         n.z.on <- length(z.on)
         pick <- rcat(1,rep(1/n.z.on,n.z.on)) #select one of these individuals
         pick <- z.on[pick]
-        #prereject turning off individuals currently allocated samples
+        #prereject turning off detected individuals
         if(any(pick==inds.detected)){ #is this individual detected?
           reject <- TRUE
         }
