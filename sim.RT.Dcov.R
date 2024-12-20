@@ -4,20 +4,42 @@ e2dist <- function (x, y){
   matrix(dvec, nrow = nrow(x), ncol = nrow(y), byrow = F)
 }
 
-sim.RT <-
-  function(N=NA,lam0=NA,p0=NA,sigma=NA,theta.d=NA,lambda.d=NA,K=NA,X=NA,buff=NA,obstype="poisson",
-           theta.thin=NA,K1D=NA,K2D=NA){
+sim.RT.Dcov <-
+  function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,lam0=NA,p0=NA,
+           sigma=NA,theta.d=NA,lambda.d=NA,K=NA,X=NA,xlim=NA,ylim=NA,
+           obstype="poisson",theta.thin=NA,K1D=NA,K2D=NA){
     library(abind)
+    #get expected N
+    cellArea <- res^2
+    lambda.cell <- exp(D.beta0 + D.beta1*D.cov)*cellArea
+    lambda.N <- sum(lambda.cell)
+    #simulate realized N
+    N <- rpois(1,lambda.N)
+    
+    #recreate some Dcov things so we can pass fewer arguments into this function
+    x.vals <- seq(xlim[1]+res/2,xlim[2]-res/2,res) #x cell centroids
+    y.vals <- seq(ylim[1]+res/2,ylim[2]-res/2,res) #y cell centroids
+    dSS <- as.matrix(cbind(expand.grid(x.vals,y.vals)))
+    cells <- matrix(1:nrow(dSS),nrow=length(x.vals),ncol=length(y.vals))
+    n.cells <- nrow(dSS)
+    n.cells.x <- length(x.vals)
+    n.cells.y <- length(y.vals)
     
     # simulate a population of activity centers
-    X <- as.matrix(X)
-    xlim <- c(min(X[,1]),max(X[,1]))+c(-buff,buff)
-    ylim <- c(min(X[,2]),max(X[,2]))+c(-buff,buff)
-    s <- cbind(runif(N, xlim[1],xlim[2]), runif(N,ylim[1],ylim[2]))
+    pi.cell <- lambda.cell/sum(lambda.cell)
+    #zero out non-habitat
+    pi.cell[InSS==0] <- 0
+    s.cell <- sample(1:n.cells,N,prob=pi.cell,replace=TRUE)
+    #distribute activity centers uniformly inside cells
+    s <- matrix(NA,nrow=N,ncol=2)
+    for(i in 1:N){
+      tmp <- which(cells==s.cell[i],arr.ind=TRUE) #x and y number
+      s[i,1] <- runif(1,x.vals[tmp[1]]-res/2,x.vals[tmp[1]+res/2])
+      s[i,2] <- runif(1,y.vals[tmp[2]]-res/2,y.vals[tmp[2]+res/2])
+    }
     D <- e2dist(s,X)
-    lamd <- lam0 * exp(-D * D/(2 * sigma * sigma))
     J <- nrow(X)
-    
+    lamd <- lam0 * exp(-D * D/(2 * sigma * sigma))
     #trap operation
     if(!any(is.na(K1D))){
       if(any(K1D>K)){
@@ -168,6 +190,9 @@ sim.RT <-
 
     out <- list(y.true=y.true,y.ID=y.ID,this.j=this.j,this.k=this.k,
               X=X,K=K,K1D=K1D,K2D=K2D,buff=buff,s=s,xlim=xlim,ylim=ylim,
-              ID=ID,n.ID=n.ID,y.true.full=y.true.full,n.cap=n.cap)
+              ID=ID,n.ID=n.ID,y.true.full=y.true.full,n.cap=n.cap,
+              xlim=xlim,ylim=ylim,x.vals=x.vals,y.vals=y.vals,dSS=dSS,cells=cells,
+              n.cells=n.cells,n.cells.x=n.cells.x,n.cells.y=n.cells.y,s.cell=s.cell,
+              D.cov=D.cov,InSS=InSS,res=res,cellArea=cellArea,N=N,lambda.N=lambda.N)
     return(out)
   }

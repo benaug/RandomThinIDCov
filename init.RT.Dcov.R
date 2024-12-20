@@ -4,7 +4,7 @@ e2dist <- function (x, y){
   matrix(dvec, nrow = nrow(x), ncol = nrow(y), byrow = F)
 }
 
-init.RT <- function(data,inits=NA,M=NA,obstype="poisson"){
+init.RT.Dcov <- function(data,inits=NA,M=NA,obstype="poisson"){
   library(abind)
   y.ID <- data$y.ID
   this.j <- data$this.j
@@ -12,7 +12,8 @@ init.RT <- function(data,inits=NA,M=NA,obstype="poisson"){
   X <- as.matrix(data$X)
   J <- nrow(X)
   K <- dim(y.ID)[3]
-  buff<- data$buff
+  xlim <- data$xlim
+  ylim <- data$ylim
   n.ID <- data$n.ID
   K1D <- data$K1D
   K2D <- data$K2D
@@ -21,10 +22,6 @@ init.RT <- function(data,inits=NA,M=NA,obstype="poisson"){
   if(length(dim(y.ID))!=3){
     stop("dim(y.ID) must be 3. Reduced to 2 during initialization")
   }
-
-  buff <- data$buff
-  xlim <- c(min(X[,1]),max(X[,1]))+c(-buff, buff)
-  ylim <- c(min(X[,2]),max(X[,2]))+c(-buff, buff)
   
   ##pull out initial values
   lam0 <- inits$lam0
@@ -63,15 +60,33 @@ init.RT <- function(data,inits=NA,M=NA,obstype="poisson"){
   s <- cbind(runif(M,xlim[1],xlim[2]), runif(M,ylim[1],ylim[2])) #assign random locations
   idx <- which(rowSums(y.true2D)>0) #switch for those actually caught
   for(i in idx){
-    trps<- matrix(X[y.true2D[i,]>0,1:2],ncol=2,byrow=FALSE)
+    trps <- matrix(X[y.true2D[i,]>0,1:2],ncol=2,byrow=FALSE)
     if(nrow(trps)>1){
       s[i,] <- c(mean(trps[,1]),mean(trps[,2]))
     }else{
       s[i,] <- trps
     }
   }
+  #If using a habitat mask, move any s's initialized in non-habitat above to closest habitat
+  e2dist  <-  function (x, y){
+    i <- sort(rep(1:nrow(y), nrow(x)))
+    dvec <- sqrt((x[, 1] - y[i, 1])^2 + (x[, 2] - y[i, 2])^2)
+    matrix(dvec, nrow = nrow(x), ncol = nrow(y), byrow = F)
+  }
+  getCell  <-  function(s,res,cells){
+    cells[trunc(s[1]/res)+1,trunc(s[2]/res)+1]
+  }
+  alldists <- e2dist(s,data$dSS)
+  alldists[,data$InSS==0] <- Inf
+  for(i in 1:M){
+    this.cell <- data$cells[trunc(s[i,1]/data$res)+1,trunc(s[i,2]/data$res)+1]
+    if(data$InSS[this.cell]==0){
+      cands <- alldists[i,]
+      new.cell <- which(alldists[i,]==min(alldists[i,]))
+      s[i,] <- data$dSS[new.cell,]
+    }
+  }
   D <- e2dist(s, X)
-  
   if(obstype=="poisson"){
     lamd <- lam0 * exp(-D * D/(2 * sigma * sigma))
     ll.y <- y.true2D*0
