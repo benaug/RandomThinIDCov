@@ -11,6 +11,7 @@ source("NimbleModelRT Poisson Dcov DA2 Marginal.R")
 source("NimbleFunctionsRT Poisson Dcov DA2 Marginal.R")
 source("init.RT.Dcov.R")
 source("sSampler Poisson Dcov Marginal.R")
+source("mask.check.R")
 
 #If using Nimble version 0.13.1 and you must run this line 
 nimbleOptions(determinePredictiveNodesInModel = FALSE)
@@ -101,6 +102,11 @@ points(data$s,pch=16) #add activity centers
 str(data$y.ID) #the observed ID detections
 head(data$this.j) #the trap of detection for all unidentified detections
 head(data$this.k) #occasion of capture, but not used in this 2D data sampler
+
+#function to test for errors in mask set up. 
+mask.check(dSS=data$dSS,cells=data$cells,n.cells=data$n.cells,n.cells.x=data$n.cells.x,
+           n.cells.y=data$n.cells.y,res=data$res,xlim=data$xlim,ylim=data$ylim,
+           x.vals=data$x.vals,y.vals=data$y.vals)
 
 ##Fit model in Nimble##
 #data augmentation level
