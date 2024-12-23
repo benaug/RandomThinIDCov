@@ -128,7 +128,6 @@ init.RT.Dcov <- function(data,inits=NA,M=NA,obstype="poisson"){
   }else{
     stop("obstype not recognized")
   }
-  
   if(!is.finite(sum(ll.y)))stop("Starting observation model likelihood not finite. Possible error in K1D (if supplied by user) or problem initializing data.")
   
   return(list(s=s,z=z,ID=ID,y.ID=y.ID2D,y.true=y.true2D,
