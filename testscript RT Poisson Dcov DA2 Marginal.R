@@ -73,9 +73,9 @@ points(X,pch=4)
 dSS.tmp <- dSS - res/2 #convert back to grid locs
 InSS <- rep(1,length(D.cov))
 InSS[dSS.tmp[,1]<2&dSS.tmp[,2]<2] <- 0
-InSS[dSS.tmp[,1]<2&dSS.tmp[,2]>12] <- 0
-InSS[dSS.tmp[,1]>12&dSS.tmp[,2]<2] <- 0
-InSS[dSS.tmp[,1]>12&dSS.tmp[,2]>12] <- 0
+InSS[dSS.tmp[,1]<2&dSS.tmp[,2]>10] <- 0
+InSS[dSS.tmp[,1]>10&dSS.tmp[,2]<2] <- 0
+InSS[dSS.tmp[,1]>10&dSS.tmp[,2]>10] <- 0
 
 image(x.vals,y.vals,matrix(InSS,n.cells.x,n.cells.y),main="Habitat")
 
@@ -143,6 +143,9 @@ Nimdata <- list(y.ID=nimbuild$y.ID,z=z.data,X=as.matrix(X),K1D=K1D,y.noID=y.noID
 # set parameters to monitor
 parameters <- c('lam0','sigma','theta.thin','N','lambda.N',"D0","D.beta1")
 nt <- 1 #thinning rate
+#record these for plotting density surface
+parameters2 <- c("lambda.cell",'D0')
+nt2 <- 10 #thinning rate
 
 # Build the model, configure the mcmc, and compile
 start.time <- Sys.time()
@@ -151,7 +154,9 @@ Rmodel <- nimbleModel(code=NimModel, constants=constants, data=Nimdata,check=FAL
 #use block sampler below for 'D0.M','D.beta1'
 config.nodes <- c('lam0','sigma','theta.thin')
 # config.nodes <- c()
-conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,nodes=config.nodes)
+conf <- configureMCMC(Rmodel,monitors=parameters, thin=nt,
+                      monitors2=parameters2, thin2=nt2,
+                      nodes=config.nodes)
 
 #conf$printSamplers() #shows the samplers used for each parameter and latent variable
 
@@ -212,3 +217,36 @@ plot(mcmc(mvSamples[-c(1:burnin),]))
 data$N
 data$lambda.N
 exp(D.beta0)
+
+#plot density surface, etc.
+mvSamples2  <-  as.matrix(Cmcmc$mvSamples2)
+lambda.cell.idx <- grep("lambda.cell",colnames(mvSamples2))
+D0.idx <- grep("D0",colnames(mvSamples2))
+burnin2 <- 10 #should discard more burnin
+
+#compare expected D plot to truth (for simulated data sets)
+n.cells <- data$n.cells
+lambda.cell <- exp(D.beta0 + D.beta1*D.cov)*cellArea
+n.iter.use <- burnin2:nrow(mvSamples2)
+lambda.cell.post <- t(cellArea*mvSamples2[n.iter.use,D0.idx]*mvSamples2[n.iter.use,lambda.cell.idx[1:n.cells]])
+lambda.cell.ests <- rowMeans(lambda.cell.post[1:n.cells,])
+lambda.cell.HPDs <- HPDinterval(mcmc(t(lambda.cell.post[1:n.cells,])))
+#remove nonhabitat (or not, comment out)
+lambda.cell[data$InSS==0] <- NA
+lambda.cell.ests[data$InSS==0] <- NA
+
+par(mfrow=c(1,1),ask=FALSE)
+zlim <- range(c(lambda.cell,lambda.cell.ests),na.rm=TRUE) #use same zlim for plots below
+#truth
+image(x.vals,y.vals,matrix(lambda.cell,n.cells.x,n.cells.y),main="Expected Density",zlim=zlim)
+#estimate, posterior means
+image(x.vals,y.vals,matrix(lambda.cell.ests,n.cells.x,n.cells.y),main="Expected Density",zlim=zlim)
+
+#cell ests and 95% HPDs vs. truth. 
+#Need a lot of posterior samples for accurate 95% HPDs, if not, will look "jagged"
+idx <- order(lambda.cell)
+plot(lambda.cell.ests[1:n.cells][idx]~lambda.cell[1:n.cells][idx],type="l",lwd=2,
+     main="True vs. Estimated Density",ylim=range(lambda.cell.HPDs[1:n.cells,]))
+lines(lambda.cell.HPDs[1:n.cells,1][idx]~lambda.cell[1:n.cells][idx],lty=2)
+lines(lambda.cell.HPDs[1:n.cells,2][idx]~lambda.cell[1:n.cells][idx],lty=2)
+abline(0,1,col="darkred",lwd=2) #1:1 expectation
