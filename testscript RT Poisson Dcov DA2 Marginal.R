@@ -93,7 +93,7 @@ points(X,pch=4,cex=1,lwd=2)
 #setting seed here because I am setting a seed to produce the D.cov and you will simulate the same
 #data set over and over if you don't use different seeds here for each data set you simulate
 set.seed(143532) #change seed for new data set
-data <- sim.RT.Dcov(D.beta0=D.beta0,D.beta1=D.beta1,D.cov=D.cov,InSS=InSS,xlim=xlim,ylim=ylim,
+data <- sim.RT.Dcov(D.beta0=D.beta0,D.beta1=D.beta1,D.cov=D.cov,InSS=InSS,res=res,xlim=xlim,ylim=ylim,
                      lam0=lam0,sigma=sigma,theta.thin=theta.thin,K=K,X=X,obstype="poisson")
 points(data$s,pch=16) #add activity centers
 
@@ -214,9 +214,11 @@ mvSamples <- as.matrix(Cmcmc$mvSamples)
 burnin <- 500
 plot(mcmc(mvSamples[-c(1:burnin),]))
 
-data$N
-data$lambda.N
+data$N #realized N
+data$lambda.N #expected N
 exp(D.beta0)
+
+cor(mvSamples[-c(1:burnin),])
 
 #plot density surface, etc.
 mvSamples2  <-  as.matrix(Cmcmc$mvSamples2)

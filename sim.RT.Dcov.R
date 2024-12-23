@@ -5,7 +5,7 @@ e2dist <- function (x, y){
 }
 
 sim.RT.Dcov <-
-  function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,lam0=NA,p0=NA,
+  function(D.beta0=NA,D.beta1=NA,D.cov=NA,InSS=NA,res=NA,lam0=NA,p0=NA,
            sigma=NA,theta.d=NA,lambda.d=NA,K=NA,X=NA,xlim=NA,ylim=NA,
            obstype="poisson",theta.thin=NA,K1D=NA,K2D=NA){
     library(abind)
