@@ -18,7 +18,8 @@ NimModel <- nimbleCode({
     y.true[i,1:J] ~ dNBVector(p=p[i,1:J],theta.d=theta.d*K1D[1:J],z=z[i]) #vectorized obs mod. trap op: sum of N NB RVs is NB with theta.d=N*theta.d
     y.ID[i,1:J] ~ dBinomialVector(theta.thin, y.true[i,1:J],capcounts=capcounts[i])  # Model for ID process
   }
-  capcounts[1:M] <- Getcapcounts(y.true=y.true[1:M,1:J]) #intermediate object to derive n
-  n <- Getncap(capcounts=capcounts[1:M],ID=ID[1:n.samples]) #number of captured individuals
+  #calculate number of inds captured
+  capcounts[1:M] <- Getcapcounts(ID=ID[1:n.samples],M=M) #intermediate object
+  n <- Getncap(capcounts=capcounts[1:M])
   N <- sum(z[1:M])
 })# end model

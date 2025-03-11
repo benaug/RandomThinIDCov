@@ -21,7 +21,8 @@ NimModel <- nimbleCode({
       y.true[g,i,1:J[g]] ~ dPoissonVector(lam[g,i,1:J[g]]*K1D[g,1:J[g]],z=z[g,i])  # Model for complete capture histories
       y.ID[g,i,1:J[g]] ~ dBinomialVector(theta.thin[g], y.true[g,i,1:J[g]],capcounts=capcounts[g,i])  # Model for ID process
     }
-    capcounts[g,1:M[g]] <- Getcapcounts(y.true=y.true[g,1:M[g],1:J[g]]) #intermediate object to derive n
-    n[g] <- Getncap(capcounts=capcounts[g,1:M[g]],ID=ID[g,1:n.samples[g]]) #number of captured individuals
+    #calculate number of inds captured
+    capcounts[g,1:M[g]] <- Getcapcounts(ID=ID[g,1:n.samples[g]],M=M[g]) #intermediate object
+    n[g] <- Getncap(capcounts=capcounts[g,1:M[g]])
   }
 })# custom Metropolis-Hastings update for N/z
