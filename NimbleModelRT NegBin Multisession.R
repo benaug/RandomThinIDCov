@@ -24,7 +24,7 @@ NimModel <- nimbleCode({
       y.ID[g,i,1:J[g]] ~ dBinomialVector(theta.thin[g], y.true[g,i,1:J[g]],capcounts=capcounts[g,i])  # Model for ID process
     }
     #calculate number of inds captured
-    capcounts[g,1:M[g]] <- Getcapcounts(ID=ID[g,1:n.samples[g]],M=M[g]) #intermediate object
+    capcounts[g,1:M[g]] <- Getcapcounts(ID=ID[g,1:n.samples[g]],M=M[g],capcounts.ID=capcounts.ID[g,1:M[g]]) #intermediate object
     n[g] <- Getncap(capcounts=capcounts[g,1:M[g]])
   }
 })# custom Metropolis-Hastings update for N/z

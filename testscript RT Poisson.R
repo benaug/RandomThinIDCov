@@ -44,6 +44,7 @@ inits <- list(lam0=1,sigma=1) #ballpark inits to build data
 #This function structures the simulated data to fit the model in Nimble (some more restructing below)
 #Also checks some inits
 nimbuild <- init.RT(data,inits,M=M,obstype="poisson")
+capcounts.ID <- rowSums(nimbuild$y.ID)
 
 #inits for nimble
 Niminits <- list(z=nimbuild$z,s=nimbuild$s,ID=nimbuild$ID,capcounts=rowSums(nimbuild$y.true),
@@ -57,7 +58,7 @@ constants <- list(M=M,J=J,K1D=K1D,n.samples=nimbuild$n.samples,xlim=data$xlim,yl
 z.data <- c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
 
 Nimdata <- list(y.true=matrix(NA,nrow=M,ncol=J),y.ID=nimbuild$y.ID,
-              ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M))
+              ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M),capcounts.ID=capcounts.ID)
 
 # set parameters to monitor
 parameters <- c('psi','lam0','sigma','theta.thin','N','n')
@@ -125,7 +126,7 @@ end.time-start.time2 # post-compilation run time
 
 
 mvSamples <- as.matrix(Cmcmc$mvSamples)
-plot(mcmc(mvSamples[2:nrow(mvSamples),]))
+plot(mcmc(mvSamples[250:nrow(mvSamples),]))
 
 data$n.cap #true number of captured individuals
 

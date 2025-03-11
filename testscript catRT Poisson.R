@@ -75,6 +75,7 @@ inits <- list(lam0=lam0,sigma=sigma,gamma=gamma) #ballpark inits to build data
 #This function structures the simulated data to fit the model in Nimble (some more restructing below)
 #Also checks some inits
 nimbuild <- init.catRT(data,inits,M=M)
+capcounts.ID <- rowSums(nimbuild$y.ID)
 
 gammaMat <- nimbuild$gammaMat
 G.true.init <- nimbuild$G.true
@@ -96,7 +97,7 @@ z.data <- c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
 
 Nimdata <- list(y.true=matrix(NA,nrow=M,ncol=J),y.ID=nimbuild$y.ID,
               ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M),
-              G.true=G.true.data)
+              G.true=G.true.data,capcounts.ID=capcounts.ID)
 
 # set parameters to monitor
 parameters <- c('psi','lam0','sigma','theta.thin','N','n','gammaMat')

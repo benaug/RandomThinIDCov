@@ -88,6 +88,7 @@ inits <- list(lam0=lam0,sigma=sigma) #ballpark inits to build data, one per sess
 #This function structures the simulated data to fit the model in Nimble (some more restructing below)
 #Also checks some inits
 nimbuild <- init.catRT.multisession(data,inits,M=M,obstype="poisson")
+capcounts.ID <- apply(nimbuild$y.ID,c(1,2),sum)
 
 #inits for nimble
 N.init <- rowSums(nimbuild$z,na.rm=TRUE)
@@ -115,7 +116,7 @@ for(g in 1:N.session){
 
 Nimdata <- list(y.ID=nimbuild$y.ID,y.true=array(NA,dim=c(N.session,max(M),max(J))),
               ID=matrix(NA,N.session,max(nimbuild$n.samples)),
-              z=z.data,X=nimbuild$X,capcounts=matrix(NA,N.session,max(M)),G.true=G.true.data)
+              z=z.data,X=nimbuild$X,capcounts=matrix(NA,N.session,max(M)),G.true=G.true.data,capcounts.ID=capcounts.ID)
 
 # set parameters to monitor
 parameters <- c('lam0.fixed','sigma.fixed','theta.thin','N','n','D','lambda','gammaMat')

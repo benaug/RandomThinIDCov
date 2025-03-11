@@ -44,6 +44,7 @@ inits <- list(lam0=1,sigma=1) #ballpark inits to build data
 #This function structures the simulated data to fit the model in Nimble (some more restructing below)
 #Also checks some inits
 nimbuild <- init.RT(data,inits,M=M,obstype="poisson")
+capcounts.ID <- rowSums(nimbuild$y.ID)
 
 #inits for nimble
 Niminits <- list(z=nimbuild$z,N=sum(nimbuild$z), #z and N inits must be consistent
@@ -59,7 +60,7 @@ constants <- list(M=M,J=J,K1D=K1D,xlim=data$xlim,ylim=data$ylim,n.samples=nimbui
 z.data <- c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
 
 Nimdata <- list(y.true=matrix(NA,nrow=M,ncol=J),y.ID=nimbuild$y.ID,
-              ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M))
+              ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M),capcounts.ID=capcounts.ID)
 
 # set parameters to monitor
 parameters <- c('lam0','sigma','theta.thin','N','lambda.N','n')

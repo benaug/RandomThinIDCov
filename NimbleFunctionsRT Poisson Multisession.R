@@ -69,10 +69,10 @@ rBinomialVector <- nimbleFunction(
 )
 
 Getcapcounts <- nimbleFunction(
-  run = function(ID=double(1),M=double(0)){
+  run = function(ID=double(1),M=double(0),capcounts.ID=double(1)){
     returnType(double(1))
     n.samples <- nimDim(ID)[1]
-    capcounts <- numeric(M, value = 0)
+    capcounts <- capcounts.ID
     for(l in 1:n.samples){
       capcounts[ID[l]] <- capcounts[ID[l]] + 1
     }

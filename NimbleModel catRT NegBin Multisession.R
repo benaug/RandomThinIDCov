@@ -40,8 +40,8 @@ NimModel <- nimbleCode({
       y.ID[g,i,1:J[g]] ~ dBinomialVector(theta.thin.i[g,i], y.true[g,i,1:J[g]],capcounts=capcounts[g,i])  # Model for ID process
     }
     #calculate number of inds captured and abundance
-    capcounts[g,1:M[g]] <- Getcapcounts(ID=ID[g,1:n.samples[g]],M=M[g]) #intermediate object
+    capcounts[g,1:M[g]] <- Getcapcounts(ID=ID[g,1:n.samples[g]],M=M[g],capcounts.ID=capcounts.ID[g,1:M[g]]) #intermediate object
     #must use G.latent somewhere to make nimble happy. Sticking it here, not used in function.
-    n[g] <- Getncap(capcounts=capcounts[g,1:M[g]],G.latent=G.latent[g,1:M[g],1:n.cat])
+    n[g] <- Getncap(capcounts=capcounts[g,1:M[g]],G.latent=G.latent[g,1:M[g],1:n.cat[g]])
   }
 })# end model
