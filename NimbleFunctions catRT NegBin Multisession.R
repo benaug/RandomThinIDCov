@@ -211,9 +211,9 @@ IDSampler <- nimbleFunction(
     ID.curr <- model$ID[g,1:n.samples]
 
     ###update IDs
+    y.true.cand <- y.true
+    ID.cand <- ID.curr
     for(l in 1:n.samples){#for all samples without known IDs
-      ID.cand <- ID.curr
-      y.true.cand <- y.true
       propprobs <- lam[1:M,this.j[l]]
       for(i in 1:M){ #zero out nonmatches and z=0
         if(!match[l,i]){
@@ -257,6 +257,11 @@ IDSampler <- nimbleFunction(
             ll.y.ID[swapped[1],this.j[l]] <- ll.y.ID.cand[swapped[1],this.j[l]]
             ll.y.ID[swapped[2],this.j[l]] <- ll.y.ID.cand[swapped[2],this.j[l]]
             ID.curr[l] <- ID.cand[l]
+          }else{
+            #set these back.
+            y.true.cand[swapped[1],this.j[l]] <- y.true[swapped[1],this.j[l]]
+            y.true.cand[swapped[2],this.j[l]] <- y.true[swapped[2],this.j[l]]
+            ID.cand[l] <- ID.curr[l]
           }
         }
       }
