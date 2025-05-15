@@ -26,3 +26,6 @@ https://link.springer.com/article/10.1007/s13253-023-00598-3
 See testscript for Poisson DA2 Marginal
 
 12/20/24: added density covariates to the marginalized version. See testscript for Poisson Dcov DA2 Marginal
+
+DA2 and multisession versions use count prior data augmentation: https://github.com/benaug/SCR-Count-Prior-Data-Augmentation
+
