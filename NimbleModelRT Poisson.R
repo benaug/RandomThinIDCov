@@ -17,7 +17,7 @@ NimModel <- nimbleCode({
     y.ID[i,1:J] ~ dBinomialVector(theta.thin, y.true[i,1:J],capcounts=capcounts[i])  # Model for ID process
   }
   #calculate number of inds captured
-  capcounts[1:M] <- Getcapcounts(ID=ID[1:n.samples],M=M) #intermediate object
+  capcounts[1:M] <- Getcapcounts(ID=ID[1:n.samples],M=M,capcounts.ID=capcounts.ID[1:M]) #intermediate object
   n <- Getncap(capcounts=capcounts[1:M])
   N <- sum(z[1:M])
 })# end model
