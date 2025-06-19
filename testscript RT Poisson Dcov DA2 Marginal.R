@@ -134,10 +134,9 @@ constants <- list(M=M,J=J,D.cov=data$D.cov,cellArea=data$cellArea,n.cells=data$n
                   xlim=nimbuild$xlim,ylim=nimbuild$ylim,res=data$res)
 
 # Supply data to Nimble. Note, y.true is completely latent.
-z.data <- c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
 y.noID <- tabulate(nimbuild$this.j,J) #number of unidentified counts by trap
 dummy.data <- rep(0,M) #dummy data not used, doesn't really matter what the values are
-Nimdata <- list(y.ID=nimbuild$y.ID,z=z.data,X=as.matrix(X),K1D=K1D,y.noID=y.noID,
+Nimdata <- list(y.ID=nimbuild$y.ID,X=as.matrix(X),K1D=K1D,y.noID=y.noID,
                 dummy.data=dummy.data,cells=data$cells,InSS=data$InSS)
 
 # set parameters to monitor

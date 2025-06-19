@@ -93,10 +93,8 @@ constants <- list(M=M,J=J,K1D=data$K1D,n.samples=nimbuild$n.samples,xlim=data$xl
                 n.cat=n.cat,n.levels=n.levels)
 
 # Supply data to Nimble. Note, y.true is completely latent.
-z.data <- c(rep(1,data$n.ID),rep(NA,M-data$n.ID))
-
 Nimdata <- list(y.true=matrix(NA,nrow=M,ncol=J),y.ID=nimbuild$y.ID,
-              ID=rep(NA,nimbuild$n.samples),z=z.data,X=as.matrix(X),capcounts=rep(NA,M),
+              ID=rep(NA,nimbuild$n.samples),X=as.matrix(X),capcounts=rep(NA,M),
               G.true=G.true.data,capcounts.ID=capcounts.ID)
 
 # set parameters to monitor

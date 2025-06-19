@@ -28,6 +28,8 @@ init.RT.Dcov.multisession <- function(data,inits=NA,M=NA,obstype="poisson"){
   n.cells.y.max <- max(n.cells.y)
   res <- unlist(lapply(data,function(x){x$res}))
   cellArea <- res^2
+  xlim <- matrix(NA,N.session,2)
+  ylim <- matrix(NA,N.session,2)
   x.vals <- matrix(NA,N.session,n.cells.x.max)
   y.vals <- matrix(NA,N.session,n.cells.y.max)
   dSS <- array(NA,dim=c(N.session,n.cells.max,2))

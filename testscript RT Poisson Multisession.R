@@ -74,14 +74,9 @@ constants <- list(N.session=N.session,M=M,J=J,K1D=nimbuild$K1D,n.samples=nimbuil
                 xlim=data$xlim,ylim=data$ylim,area=area)
 
 # Supply data to Nimble. Note, y.true is completely latent.
-z.data <- matrix(NA,N.session,max(M))
-for(g in 1:N.session){
-  z.data[g,1:data$n.ID[g]] <- 1
-}
-
 Nimdata <- list(y.ID=nimbuild$y.ID,y.true=array(NA,dim=c(N.session,max(M),max(J))),
               ID=matrix(NA,N.session,max(nimbuild$n.samples)),
-              z=z.data,X=nimbuild$X,capcounts=matrix(NA,N.session,max(M)),capcounts.ID=capcounts.ID)
+              X=nimbuild$X,capcounts=matrix(NA,N.session,max(M)),capcounts.ID=capcounts.ID)
 
 # set parameters to monitor
 parameters <- c('lam0.fixed','sigma.fixed','theta.thin','N','n','D','lambda')

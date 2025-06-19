@@ -83,11 +83,7 @@ for(g in 1:N.session){
 }
 
 # Supply data to Nimble.
-z.data <- matrix(NA,N.session,max(M))
-for(g in 1:N.session){
-  z.data[g,1:data$n.ID[g]] <- 1
-}
-Nimdata <- list(z=z.data,X=nimbuild$X,y.ID=nimbuild$y.ID,y.noID=y.noID)
+Nimdata <- list(X=nimbuild$X,y.ID=nimbuild$y.ID,y.noID=y.noID)
 
 
 # set parameters to monitor

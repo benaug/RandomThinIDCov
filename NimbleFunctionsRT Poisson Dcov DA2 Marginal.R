@@ -96,7 +96,7 @@ zSampler <- nimbleFunction(
       #propose to add/subtract 1
       updown <- rbinom(1,1,0.5) #p=0.5 is symmetric. If you change this, must account for asymmetric proposal
       reject <- FALSE #we auto reject if you select a detected call
-      if(updown==0){#subtract
+      if(updown==0){ #subtract
         # find all z's currently on
         z.on <- which(model$z==1)
         n.z.on <- length(z.on)

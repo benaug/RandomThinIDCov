@@ -102,7 +102,7 @@ for(g in 1:N.session){
 }
 
 #Density covariates
-D.beta0 <- rep(-1,N.session)
+D.beta0 <- rep(-0.5,N.session)
 D.beta1 <- rep(0.5,N.session)
 #what is implied expected N in state space?
 for(g in 1:N.session){
@@ -173,7 +173,7 @@ constants <- list(N.session=N.session,M=M,J=J,K1D=nimbuild$K1D,
 # Supply data to Nimble. marginalized data formatted in nimbuild object
 Nimdata <- list(y.ID=nimbuild$y.ID, #ID detections
                 y.noID=nimbuild$y.noID, #no ID detections
-                z=nimbuild$z.data,X=nimbuild$X,cells=nimbuild$cells,
+                X=nimbuild$X,cells=nimbuild$cells,
                 dummy.data=nimbuild$dummy.data,InSS=nimbuild$InSS)
 
 parameters <- c('D0','D.beta1','lambda.N','N','lam0.fixed',
