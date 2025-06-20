@@ -52,7 +52,7 @@ rPoissonVector <- nimbleFunction(
   }
 )
 
-#Required custom update for number of calls
+#Required custom update for number of individuals
 zSampler <- nimbleFunction(
   contains = sampler_BASE,
   setup = function(model, mvSaved, target, control) {

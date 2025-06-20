@@ -68,22 +68,21 @@ par(mfrow=c(1,1),ask=FALSE)
 image(x.vals,y.vals,matrix(D.cov,n.cells.x,n.cells.y),main="D.cov",xlab="X",ylab="Y",col=cols1)
 points(X,pch=4)
 
-#Additionally, maybe we want to exclude "non-habitat"
-#just removing the corners here for simplicity
+#Additionally, maybe we want to exclude "non-habitat" or limit the state space extent
+#let's use a 3sigma buffer
 dSS.tmp <- dSS - res/2 #convert back to grid locs
-InSS <- rep(1,length(D.cov))
-InSS[dSS.tmp[,1]<2&dSS.tmp[,2]<2] <- 0
-InSS[dSS.tmp[,1]<2&dSS.tmp[,2]>10] <- 0
-InSS[dSS.tmp[,1]>10&dSS.tmp[,2]<2] <- 0
-InSS[dSS.tmp[,1]>10&dSS.tmp[,2]>10] <- 0
-
-image(x.vals,y.vals,matrix(InSS,n.cells.x,n.cells.y),main="Habitat")
+InSS <- rep(0,length(D.cov))
+dists <- e2dist(X,dSS.tmp)
+min.dists <- apply(dists,2,min)
+InSS[min.dists<(3*sigma)] <- 1
+image(x.vals,y.vals,matrix(D.cov*InSS,n.cells.x,n.cells.y),main="Habitat",col=cols1)
+points(X,pch=4,col="darkred",lwd=2)
 
 #Density covariates
 D.beta0 <- -0.5 #data simulator uses intercept for marked + unmarked
 D.beta1 <- 0.5
 #what is implied expected N in state space?
-lambda.cell <- exp(D.beta0 + D.beta1*D.cov)*cellArea
+lambda.cell <- InSS*exp(D.beta0 + D.beta1*D.cov)*cellArea
 sum(lambda.cell) #expected N in state space
 
 image(x.vals,y.vals,matrix(lambda.cell,n.cells.x,n.cells.y),main="Expected Density",col=cols1)
@@ -110,7 +109,7 @@ mask.check(dSS=data$dSS,cells=data$cells,n.cells=data$n.cells,n.cells.x=data$n.c
 
 ##Fit model in Nimble##
 #data augmentation level
-M <- 175
+M <- 150
 
 J <- nrow(X) #number of detectors
 K1D <- data$K1D #pull out trap operation

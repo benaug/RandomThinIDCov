@@ -106,7 +106,7 @@ D.beta0 <- rep(-0.5,N.session)
 D.beta1 <- rep(0.5,N.session)
 #what is implied expected N in state space?
 for(g in 1:N.session){
-  lambda.cell <- exp(D.beta0[g] + D.beta1[g]*D.cov[[g]])*cellArea[g]
+  lambda.cell <- InSS[[g]]*exp(D.beta0[g] + D.beta1[g]*D.cov[[g]])*cellArea[g]
   print(sum(lambda.cell)) #expected N in state space
   image(x.vals[[g]],y.vals[[g]],matrix(lambda.cell,n.cells.x[g],n.cells.y[g]),
         main=paste("Session",g," Expected Density"),col=cols1)

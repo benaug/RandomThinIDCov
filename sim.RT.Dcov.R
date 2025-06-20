@@ -11,7 +11,7 @@ sim.RT.Dcov <-
     library(abind)
     #get expected N
     cellArea <- res^2
-    lambda.cell <- exp(D.beta0 + D.beta1*D.cov)*cellArea
+    lambda.cell <- InSS*exp(D.beta0 + D.beta1*D.cov)*cellArea
     lambda.N <- sum(lambda.cell)
     #simulate realized N
     N <- rpois(1,lambda.N)
