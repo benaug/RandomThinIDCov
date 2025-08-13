@@ -19,3 +19,4 @@ See testscripts.
 testscript RT Poisson.R = base RT model
 testscript catRT Poisson.R = categorical RT model
 
+Multisession and single session DA2 models use N-prior data augmentation: https://github.com/benaug/SCR-N-Prior-Data-Augmentation
